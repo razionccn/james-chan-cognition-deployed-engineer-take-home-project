@@ -43,6 +43,10 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
       onChanged()
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Unexpected error while submitting the review.')
+      // The backend is the source of truth: reload the case and queue so a stale
+      // panel (e.g. 409 because another reviewer acted first) shows the real state.
+      query.refetch()
+      onChanged()
     } finally {
       setSubmitting(false)
     }
@@ -128,7 +132,7 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
                     <li key={e.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <span className="font-medium text-slate-800">
-                          {actionMeta[e.action].label}d by {e.actor_name}
+                          {actionMeta[e.action].pastLabel} by {e.actor_name}
                         </span>
                         <time className="text-xs text-slate-500" dateTime={e.created_at}>
                           {formatDate(e.created_at, true)}

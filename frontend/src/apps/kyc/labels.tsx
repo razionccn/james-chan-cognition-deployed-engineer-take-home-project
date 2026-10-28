@@ -7,10 +7,10 @@ const riskTone: Record<RiskLevel, BadgeTone> = { low: 'neutral', medium: 'warnin
 export const statusLabel: Record<KycStatus, string> = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', escalated: 'Escalated' }
 export const riskLabel: Record<RiskLevel, string> = { low: 'Low', medium: 'Medium', high: 'High' }
 
-export const actionMeta: Record<ReviewAction, { label: string; past: string; variant: 'primary' | 'danger' | 'warning'; description: string }> = {
-  approve: { label: 'Approve', past: 'approved', variant: 'primary', description: 'Marks the customer as verified. This is final in the prototype.' },
-  reject: { label: 'Reject', past: 'rejected', variant: 'danger', description: 'Declines verification. This is final in the prototype.' },
-  escalate: { label: 'Escalate', past: 'escalated', variant: 'warning', description: 'Sends the case for senior review; it can still be approved or rejected.' },
+export const actionMeta: Record<ReviewAction, { label: string; past: string; pastLabel: string; variant: 'primary' | 'danger' | 'warning'; description: string }> = {
+  approve: { label: 'Approve', past: 'approved', pastLabel: 'Approved', variant: 'primary', description: 'Marks the customer as verified. This is final in the prototype.' },
+  reject: { label: 'Reject', past: 'rejected', pastLabel: 'Rejected', variant: 'danger', description: 'Declines verification. This is final in the prototype.' },
+  escalate: { label: 'Escalate', past: 'escalated', pastLabel: 'Escalated', variant: 'warning', description: 'Sends the case for senior review; it can still be approved or rejected.' },
 }
 
 export const reviewerNames: Record<string, string> = { 'ana.reviewer': 'Ana Okafor', 'ben.reviewer': 'Ben Castillo' }
