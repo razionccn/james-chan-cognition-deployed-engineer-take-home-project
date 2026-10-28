@@ -2,8 +2,12 @@
 # Consumed by the `create-internal-tool` Skill (.agents/skills/create-internal-tool/SKILL.md).
 # Conventions and shared building blocks are described in AGENTS.md.
 #
-# Naming note: the app_id is `feature_flags` (Python package / API prefix / tables);
-# this file is named `feature_flags.yaml` as requested by the task brief.
+# Spec conventions (AGENTS.md rules 7–8):
+# - This file is named `specs/<app.id>.yaml`; `app.id` is snake_case and also names the backend
+#   package, the API prefix and the table prefix (checked by backend/tests/test_core.py).
+# - `roles` refer to the global persona roles (reviewer / viewer) in backend/app/core/personas.py.
+# - All `datetime` fields are ISO-8601 UTC with `Z` suffix at second precision.
+# - Seeded audit history must be consistent with the seeded records (`updated_at` == newest event).
 
 app:
   id: feature_flags
@@ -128,6 +132,7 @@ seed_data:
     - deterministic (same data every seed) so the demo is repeatable
     - at least four flag names exist in all three environments so environment filtering is meaningful
     - a few flags ship with a historical audit event
+    - each flag's updated_at equals the created_at of its newest audit event
 
 acceptance_criteria:
   - id: AC-1
@@ -164,7 +169,14 @@ acceptance_criteria:
     then: all existing KYC tests still pass unchanged
   - id: AC-10
     kind: browser
-    then: list loads through the API, search and environment filter work, detail opens, staging toggle persists across refresh and backend restart, audit entry shown, production toggle is disabled in the UI and rejected by the backend, viewer cannot toggle.
+    then:
+      - list loads through the API
+      - search and environment / state filters work
+      - detail panel opens and its URL survives a reload
+      - staging toggle (with optional reason) persists across refresh and backend restart
+      - the new audit entry is shown
+      - production toggle is disabled in the UI and rejected by the backend (403 environment_locked)
+      - viewer cannot toggle in the UI and the backend rejects a forced request (403 forbidden)
 
 non_goals:
   - real feature-flag service (LaunchDarkly, Unleash, …) or SDK integration

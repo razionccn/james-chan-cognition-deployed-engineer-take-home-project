@@ -91,15 +91,16 @@ Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to
 ## 5. Tests
 
 ```bash
-cd backend && python -m pytest          # 28 passed  (2 core + 13 KYC + 13 feature flags)
+cd backend && python -m pytest          # 31 passed  (5 core + 13 KYC + 13 feature flags)
 cd frontend && npm run typecheck        # tsc -b, clean
+cd frontend && npm test                 # Vitest: 4 passed (ConfirmDialog)
 cd frontend && npm run build            # production build, clean
 ```
 
 Both apps are served by the same backend and frontend, so "running each one" is the same two commands in §4:
 after `init-db --reset --seed` the sidebar shows **KYC Review Queue** (`/kyc`) and **Feature-Flag Admin Panel**
 (`/feature-flags`). To run one app's tests only: `python -m pytest tests/test_kyc.py` or
-`python -m pytest tests/test_feature_flags.py`.
+`python -m pytest tests/test_feature_flags.py`. All of the above run in CI (`.github/workflows/ci.yml`) on every PR.
 
 `backend/tests/test_kyc.py` maps 1:1 to the spec's acceptance criteria and runs through the real
 FastAPI app and a real SQLite file (no mocks):
@@ -175,12 +176,12 @@ Second application (Feature-Flag Admin Panel): built later in a separate fresh s
 `docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output (`28 passed`), elapsed time, reuse and the
 browser-testing defect it surfaced (optional reason missing from `ConfirmDialog`, fixed).
 
-Not completed / out of scope: production identity, deployment, pagination, frontend tests / CI.
+Not completed / out of scope: production identity, deployment, pagination, Playwright smoke test.
 
 ## 9. Recommended next steps for production readiness
 
 1. Replace personas with an IdP (OIDC) and a policy layer; keep `require_role()` as the enforcement point.
 2. Move from SQLite to Postgres with migrations (Alembic or plain SQL), keeping the `repository.py` boundary.
 3. Add optimistic concurrency (`expected_status` on review actions) and idempotency keys.
-4. Add structured logging/metrics, CI (pytest + typecheck + build), and a Playwright smoke test for the queue flow.
+4. Add structured logging/metrics and a Playwright smoke test for the queue flow (CI with pytest + typecheck + Vitest + build exists).
 5. Build a third tool with a different shape (forms, uploads, charts) to test the template beyond audited list + detail + state change; promote the audit table/timeline and filter-state patterns to shared code once a third app repeats them.
