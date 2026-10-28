@@ -121,4 +121,6 @@ Per-app roles (C-5); form primitives (`TextField`, `SelectField`) — still abse
 | P1-4, C-3 | Decision recorded in AGENTS.md rule 9: audit tables stay per app until a third app; `AuditTimeline` removes the UI half of the duplication | — |
 | P1-7, C-9 | `.github/workflows/ci.yml` (pytest, typecheck, Vitest, build); `ConfirmDialog.test.tsx` (4 tests: required, optional, none, reset) | `npm test` 4 passed |
 
-Not done (P2): per-app roles, form primitives, spec JSON-Schema, Playwright smoke test.
+Not done (P2): per-app roles, form primitives, Playwright smoke test. Spec JSON-Schema is partly covered since PR #6 by
+`specs/TEMPLATE.yaml` + `specs/README.md` and the parse/section check in `test_core` (D-3); a formal schema validator is still open.
+PR #7 later added the record-identity convention, exhaustive rule-matrix tests and the LIKE-escaping fix (see implementation log, milestone 7).

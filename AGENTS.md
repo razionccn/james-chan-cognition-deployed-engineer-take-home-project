@@ -28,7 +28,7 @@ backend/app/core/registry.py          list of installed app modules
 backend/app/cli.py                    `python -m app.cli init-db [--reset] [--seed]`
 frontend/src/shared/layout/AppShell   sidebar nav (from apps/registry.ts) + persona switcher
 frontend/src/shared/components/       see index.ts: Button, StatusBadge, DataTable, FilterBar/SearchInput/SelectFilter,
-                                      Loading/Empty/ErrorState, DetailPanel/DescriptionList/Section, ConfirmDialog,
+                                      Loading/Empty/ErrorState/RefreshError, DetailPanel/DescriptionList/Section, ConfirmDialog,
                                       Toast/useToast, PageHeader, Toggle, AuditTimeline, cx
 frontend/src/shared/hooks.ts          useDebounced(), useUrlParam() (selected record in the URL)
 frontend/src/shared/format.ts         formatDate / formatDateTime / titleCase — do not re-implement per app

@@ -55,7 +55,7 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 | Devin Skill | `.agents/skills/create-internal-tool/SKILL.md` + `LEARNINGS.md` | 10-step procedure: read spec → inspect → reuse → implement → test → run → fix → summarise → retrospective |
 | Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `time.py` (timestamps), `registry.py` |
 | Backend apps | `backend/app/apps/kyc/`, `backend/app/apps/feature_flags/` | `router → service → repository`, `schema.py`, `seed.py`, `rules.py`, `schemas.py` |
-| Frontend shared | `frontend/src/shared/` | `components/` (see `index.ts`: `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toggle`, `AuditTimeline`, `Toast`, states…), `hooks.ts`, `format.ts`, `api/`, `persona/`, `layout/AppShell` |
+| Frontend shared | `frontend/src/shared/` | `components/` (see `index.ts`: `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toggle`, `AuditTimeline`, `RefreshError`, `Toast`, states…), `hooks.ts`, `format.ts`, `api/`, `persona/`, `layout/AppShell` |
 | Frontend apps | `frontend/src/apps/kyc/`, `frontend/src/apps/feature_flags/` | `KycQueuePage` + `CaseDetailPanel`; `FeatureFlagsPage` + `FlagDetailPanel`; typed `api.ts` each |
 | Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py`, `test_feature_flags.py` |
 | Log | `docs/IMPLEMENTATION_LOG.md` | Milestones, decisions, assumptions, actual test output |
@@ -89,7 +89,7 @@ Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to
 ## 5. Tests
 
 ```bash
-cd backend && python -m pytest          # 38 passed  (10 core + 14 KYC + 14 feature flags)
+cd backend && python -m pytest          # 168 passed (10 core + 88 KYC + 70 feature flags, incl. exhaustive rule matrices)
 cd frontend && npm run typecheck        # tsc -b, clean
 cd frontend && npm test                 # Vitest: 14 passed (ConfirmDialog, detail panels, queue refresh)
 cd frontend && npm run build            # production build, clean
@@ -175,7 +175,7 @@ Second application (Feature-Flag Admin Panel): built later in a separate fresh s
 `docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output at delivery (`28 passed`), elapsed time, reuse and the
 browser-testing defect it surfaced (optional reason missing from `ConfirmDialog`, fixed).
 
-Not completed / out of scope: production identity, deployment, pagination, Playwright smoke test.
+Not completed / out of scope: production identity, deployment, pagination, Playwright smoke test, focus trap on `DetailPanel` itself (the confirmation dialog has one).
 
 ## 9. Recommended next steps for production readiness
 

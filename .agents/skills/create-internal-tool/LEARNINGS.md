@@ -50,5 +50,7 @@ confirmation must close when the selection changes". (Added to AGENTS.md fronten
 Template gaps: `useQuery` keeps previous data by design (lists) but panels rendered it unkeyed; `ConfirmDialog` had no
 Escape/focus handling; pages hid refetch failures. All fixed in shared code; both apps benefit without app changes beyond the id guard.
 Found by review, not tests: all of the above — the frontend had 4 tests. Now 14; detail-panel behaviour is tested per app.
-Still open: `DetailPanel` focus trap; sub-second timestamps; form primitives; per-app roles; Playwright.
+Also found by the exhaustive matrix tests: `q=%` matched everything (LIKE wildcards unescaped) → fixed in both repositories;
+write rule-matrix tests (every state × action × persona) for app #3 from the start — they are cheap and found a real bug.
+Still open: `DetailPanel` focus trap; sub-second timestamps; form primitives; per-app roles; Playwright; formal spec schema validator.
 
