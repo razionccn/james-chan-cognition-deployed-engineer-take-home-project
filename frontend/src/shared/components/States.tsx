@@ -22,6 +22,25 @@ export function EmptyState({ title, description, action }: { title: string; desc
   )
 }
 
+/**
+ * Inline alert for a refetch that failed while earlier data is still on screen, so stale rows or
+ * details are never shown as if they were fresh. Use when `query.status === 'error' && query.data`.
+ */
+export function RefreshError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div role="alert" aria-label="Refresh failed" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      <span>
+        <span className="font-medium">Refresh failed:</span> {message} Showing the last data that loaded.
+      </span>
+      {onRetry && (
+        <Button variant="secondary" size="sm" onClick={onRetry}>
+          Retry
+        </Button>
+      )}
+    </div>
+  )
+}
+
 /** Failed query: shows the backend's message verbatim and an optional retry. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (

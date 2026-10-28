@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
 import { useDebounced, useUrlParam } from '@/shared/hooks'
-import { Button, DataTable, ErrorState, FilterBar, PageHeader, SearchInput, SelectFilter, type Column } from '@/shared/components'
+import { Button, DataTable, ErrorState, FilterBar, PageHeader, RefreshError, SearchInput, SelectFilter, type Column } from '@/shared/components'
 import { kycApi } from './api'
 import { CaseDetailPanel } from './CaseDetailPanel'
 import { formatDate, formatDateTime } from '@/shared/format'
@@ -67,6 +67,7 @@ export function KycQueuePage() {
         )}
       </FilterBar>
 
+      {query.status === 'error' && query.data && <RefreshError message={query.error.message} onRetry={query.refetch} />}
       {query.status === 'error' && !query.data ? (
         <ErrorState message={query.error.message} onRetry={query.refetch} />
       ) : (

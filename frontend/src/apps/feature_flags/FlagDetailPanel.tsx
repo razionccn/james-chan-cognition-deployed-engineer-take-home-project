@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError } from '@/shared/api/client'
 import { useQuery } from '@/shared/api/useQuery'
 import {
@@ -8,6 +8,7 @@ import {
   DetailPanel,
   ErrorState,
   LoadingState,
+  RefreshError,
   Section,
   Toggle,
   useToast,
@@ -21,22 +22,32 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
   const { current } = usePersona()
   const { notify } = useToast()
   const query = useQuery(() => (flagId ? featureFlagsApi.getFlag(flagId) : Promise.reject(new ApiError(0, 'none', 'No flag'))), [flagId])
-  const [pendingValue, setPendingValue] = useState<boolean | null>(null)
+  // A pending toggle is bound to the flag it was started on (see CaseDetailPanel for the rationale).
+  const [pending, setPending] = useState<{ flagId: string; value: boolean } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const flag = query.data
+  const flag = query.data && query.data.id === flagId ? query.data : undefined
   const canToggle = current?.role === 'reviewer'
   const toggleAllowed = Boolean(flag?.editable && canToggle)
+  const pendingValue = pending && pending.flagId === flagId ? pending.value : null
+
+  useEffect(() => {
+    if (pending && pending.flagId !== flagId && !submitting) {
+      setPending(null)
+      setActionError(null)
+    }
+  }, [flagId, pending, submitting])
 
   async function confirm(reason: string) {
-    if (!flagId || pendingValue === null) return
+    if (!pending) return
+    const target = pending
     setSubmitting(true)
     setActionError(null)
     try {
-      const updated = await featureFlagsApi.toggleFlag(flagId, pendingValue, reason)
+      const updated = await featureFlagsApi.toggleFlag(target.flagId, target.value, reason)
       notify('success', `${updated.name} (${environmentLabel[updated.environment]}) is now ${updated.enabled ? 'enabled' : 'disabled'}.`)
-      setPendingValue(null)
+      setPending(null)
       query.refetch()
       onChanged()
     } catch (e) {
@@ -66,7 +77,7 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
       </div>
       <label className="flex items-center gap-3 text-sm font-medium text-slate-800">
         {flag.enabled ? 'Enabled' : 'Disabled'}
-        <Toggle checked={flag.enabled} onChange={(next) => setPendingValue(next)} label={`Toggle ${flag.name} in ${flag.environment}`} disabled={!toggleAllowed} busy={submitting} />
+        <Toggle checked={flag.enabled} onChange={(next) => setPending({ flagId: flag.id, value: next })} label={`Toggle ${flag.name} in ${flag.environment}`} disabled={!toggleAllowed} busy={submitting} />
       </label>
     </div>
   ) : undefined
@@ -90,6 +101,7 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
       >
         {query.status === 'loading' && !flag && <LoadingState label="Loading flag…" />}
         {query.status === 'error' && !flag && <ErrorState message={query.error.message} onRetry={query.refetch} />}
+        {query.status === 'error' && flag && <RefreshError message={query.error.message} onRetry={query.refetch} />}
         {flag && (
           <>
             <DescriptionList
@@ -137,7 +149,7 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
         busy={submitting}
         error={actionError}
         onCancel={() => {
-          setPendingValue(null)
+          setPending(null)
           setActionError(null)
         }}
         onConfirm={confirm}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError } from '@/shared/api/client'
 import { useQuery } from '@/shared/api/useQuery'
 import {
@@ -9,6 +9,7 @@ import {
   DetailPanel,
   ErrorState,
   LoadingState,
+  RefreshError,
   Section,
   StatusBadge,
   useToast,
@@ -26,21 +27,34 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
   const { current } = usePersona()
   const { notify } = useToast()
   const query = useQuery(() => (caseId ? kycApi.getCase(caseId) : Promise.reject(new ApiError(0, 'none', 'No case'))), [caseId])
-  const [pendingAction, setPendingAction] = useState<ReviewAction | null>(null)
+  // A pending action is bound to the record it was started on; it is cancelled if the selection
+  // changes, and the request always targets `pending.caseId`, never the current prop.
+  const [pending, setPending] = useState<{ caseId: string; action: ReviewAction } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const detail = query.data
+  // Only data for the selected record counts; the query hook keeps the previous record's data
+  // while the next one loads, which must never be shown as the current record.
+  const detail = query.data && query.data.id === caseId ? query.data : undefined
   const canReview = current?.role === 'reviewer'
+  const pendingAction = pending && pending.caseId === caseId ? pending.action : null
+
+  useEffect(() => {
+    if (pending && pending.caseId !== caseId && !submitting) {
+      setPending(null)
+      setActionError(null)
+    }
+  }, [caseId, pending, submitting])
 
   async function confirm(reason: string) {
-    if (!caseId || !pendingAction) return
+    if (!pending) return
+    const target = pending
     setSubmitting(true)
     setActionError(null)
     try {
-      const updated = await kycApi.reviewCase(caseId, pendingAction, reason)
-      notify('success', `${updated.id} ${actionMeta[pendingAction].past} — now ${statusLabel[updated.status]}.`)
-      setPendingAction(null)
+      const updated = await kycApi.reviewCase(target.caseId, target.action, reason)
+      notify('success', `${updated.id} ${actionMeta[target.action].past} — now ${statusLabel[updated.status]}.`)
+      setPending(null)
       query.refetch()
       onChanged()
     } catch (e) {
@@ -59,7 +73,7 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
       canReview ? (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {detail.allowed_actions.map((a) => (
-            <Button key={a} variant={actionMeta[a].variant} onClick={() => setPendingAction(a)}>
+            <Button key={a} variant={actionMeta[a].variant} onClick={() => caseId && setPending({ caseId, action: a })}>
               {actionMeta[a].label}
             </Button>
           ))}
@@ -94,6 +108,7 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
       >
         {query.status === 'loading' && !detail && <LoadingState label="Loading case…" />}
         {query.status === 'error' && !detail && <ErrorState message={query.error.message} onRetry={query.refetch} />}
+        {query.status === 'error' && detail && <RefreshError message={query.error.message} onRetry={query.refetch} />}
         {detail && (
           <div className="space-y-6">
             <Section title="Customer summary">
@@ -140,8 +155,8 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
       </DetailPanel>
 
       <ConfirmDialog
-        open={pendingAction !== null}
-        title={pendingAction && detail ? `${actionMeta[pendingAction].label} ${detail.id}?` : ''}
+        open={pendingAction !== null && caseId !== null}
+        title={pendingAction ? `${actionMeta[pendingAction].label} ${caseId}?` : ''}
         description={pendingAction ? actionMeta[pendingAction].description : undefined}
         confirmLabel={pendingAction ? actionMeta[pendingAction].label : 'Confirm'}
         confirmVariant={pendingAction ? actionMeta[pendingAction].variant : 'primary'}
@@ -150,7 +165,7 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
         busy={submitting}
         error={actionError}
         onCancel={() => {
-          setPendingAction(null)
+          setPending(null)
           setActionError(null)
         }}
         onConfirm={confirm}
