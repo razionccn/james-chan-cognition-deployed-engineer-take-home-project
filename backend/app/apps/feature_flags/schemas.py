@@ -1,7 +1,7 @@
 """Pydantic request/response models for the feature-flag API (the wire format the frontend types mirror)."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 
 from .rules import Action, Environment
 
@@ -39,7 +39,7 @@ class FlagListResponse(BaseModel):
 
 
 class ToggleRequest(BaseModel):
-    enabled: bool
+    enabled: StrictBool  # state-changing admin field: no "yes"/"1"/"true" coercion
     reason: str = Field(default="", max_length=500)
 
 

@@ -158,6 +158,9 @@ def test_unknown_flag_returns_404_and_request_validation_envelope(client, review
 
     r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": "maybe"}, headers=reviewer_headers)
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
+    for loose in ("yes", "true", 1):  # StrictBool: coercible-looking values are rejected too
+        r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": loose}, headers=reviewer_headers)
+        assert r.status_code == 422, (loose, r.text)
     r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": False, "reason": "x" * 501}, headers=reviewer_headers)
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
 

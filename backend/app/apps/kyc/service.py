@@ -60,9 +60,9 @@ def apply_review_action(
     if not cleaned_reason:
         raise ValidationError("A reason is required for every review action.")
 
-    now = utc_now_iso()
     # BR-4: read, transition check, status update and audit event in one transaction.
     with transaction(conn):
+        now = utc_now_iso()  # after the write lock, so it never predates a commit we waited for
         # BR-5
         case = repository.get_case(conn, case_id)
         if case is None:
