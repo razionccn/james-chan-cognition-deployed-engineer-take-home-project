@@ -1,0 +1,18 @@
+import type { ComponentType } from 'react'
+
+/**
+ * Every internal app registers here. The AppShell builds sidebar navigation
+ * from this list and App.tsx mounts each app's routes under `path`.
+ *
+ * To add an app: create `src/apps/<id>/` with a root page component, then
+ * append an entry below.
+ */
+export interface AppDefinition {
+  id: string
+  name: string
+  description: string
+  path: string
+  Page: ComponentType
+}
+
+export const appRegistry: AppDefinition[] = []

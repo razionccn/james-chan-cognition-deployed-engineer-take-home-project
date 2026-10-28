@@ -1,0 +1,173 @@
+# Application specification: KYC Review Queue
+# Consumed by the `create-internal-tool` Skill (.agents/skills/create-internal-tool/SKILL.md).
+# Conventions and shared building blocks are described in AGENTS.md.
+
+app:
+  id: kyc
+  name: KYC Review Queue
+  console: Fintech Operations Console
+  purpose: >
+    Give compliance reviewers a single queue of customer identity-verification
+    (KYC) cases, let them inspect synthetic verification findings, and record an
+    approve / reject / escalate decision with a mandatory reason and a durable
+    audit trail.
+  data_policy: Synthetic records only. No real identity documents or PII.
+
+roles:
+  - id: reviewer
+    description: Can view all cases and perform review actions.
+  - id: viewer
+    description: Read-only. Can view cases and history but cannot modify anything.
+roles_note: >
+  Roles come from the DEV-ONLY simulated persona header (X-Demo-User). This is
+  not authentication. See AGENTS.md "Authorization".
+
+data_model:
+  kyc_cases:
+    primary_key: id            # e.g. KYC-1024
+    fields:
+      id: string
+      customer_name: string
+      customer_email: string            # synthetic, example.com
+      country: string                   # ISO-3166 alpha-2
+      account_type: enum [individual, business]
+      risk_level: enum [low, medium, high]
+      status: enum [pending, approved, rejected, escalated]
+      submitted_at: datetime
+      updated_at: datetime
+      assigned_reviewer: string         # persona id or null
+      findings: json                    # list of {check, result, detail}; result in [pass, warn, fail]
+  kyc_audit_events:
+    primary_key: id (autoincrement)
+    fields:
+      case_id: fk -> kyc_cases.id
+      action: enum [approve, reject, escalate]
+      previous_status: enum
+      new_status: enum
+      actor_id: string                  # persona id
+      actor_name: string
+      reason: string                    # non-empty
+      created_at: datetime
+
+workflow:
+  states: [pending, approved, rejected, escalated]
+  initial: pending
+  terminal: [approved, rejected]
+  transitions:
+    - { action: approve,  from: pending,   to: approved }
+    - { action: reject,   from: pending,   to: rejected }
+    - { action: escalate, from: pending,   to: escalated }
+    - { action: approve,  from: escalated, to: approved }
+    - { action: reject,   from: escalated, to: rejected }
+
+business_rules:
+  - id: BR-1
+    rule: Every review action requires a non-empty reason (after trimming whitespace).
+    on_violation: 422 validation_error
+  - id: BR-2
+    rule: Only transitions listed in workflow.transitions are allowed; any other action/status pair is rejected.
+    on_violation: 409 invalid_transition
+  - id: BR-3
+    rule: Only personas with role `reviewer` may perform review actions; `viewer` is rejected.
+    on_violation: 403 forbidden
+  - id: BR-4
+    rule: A successful review action updates the case status and `updated_at` and inserts exactly one audit event in the same database transaction.
+  - id: BR-5
+    rule: Unknown case ids return 404 not_found.
+  - id: BR-6
+    rule: All rules above are enforced by the backend; the frontend may additionally hide/disable controls but must never be the only guard.
+
+api:
+  base_path: /api/kyc
+  endpoints:
+    - method: GET
+      path: /cases
+      query: { q: "search customer_name or id (case-insensitive substring)", status: enum, risk_level: enum }
+      response: { items: [KycCaseSummary], total: int }
+    - method: GET
+      path: /cases/{case_id}
+      response: KycCaseDetail   # summary fields + findings + audit_events (newest first)
+    - method: POST
+      path: /cases/{case_id}/actions
+      body: { action: "enum [approve, reject, escalate]", reason: string }
+      auth: role reviewer
+      response: KycCaseDetail (updated)
+      errors: [404 not_found, 403 forbidden, 409 invalid_transition, 422 validation_error]
+    - method: GET
+      path: /meta
+      response: { statuses: [...], risk_levels: [...], transitions: {...} }
+
+pages:
+  - id: queue
+    route: /kyc
+    elements:
+      - search input (customer name or case id)
+      - status filter, risk-level filter
+      - data table with columns: Case ID, Customer, Risk, Status, Submitted, Assigned reviewer, Last updated
+      - row click opens case detail panel
+      - loading, empty and error states
+  - id: case_detail
+    route: /kyc?case={id}   # side panel over the queue; URL keeps it shareable
+    elements:
+      - header: case id, customer name, status badge, risk badge
+      - summary grid: email, country, account type, submitted, assigned reviewer, last updated
+      - verification findings checklist (pass / warn / fail indicators)
+      - review actions: Approve / Reject / Escalate buttons, shown only for allowed transitions and reviewer role
+      - confirmation dialog that requires a reason before submitting
+      - success toast after update; backend error message shown inline on failure
+      - audit history list (newest first) with previous -> new status, actor, reason, timestamp
+
+seed_data:
+  count: 24
+  distribution:
+    status: { pending: 12, escalated: 4, approved: 5, rejected: 3 }
+    risk_level: mixed low / medium / high
+  requirements:
+    - deterministic (same data every seed) so the demo is repeatable
+    - approved / rejected / escalated cases ship with at least one historical audit event
+    - findings include a mix of pass / warn / fail results correlated with risk level
+
+acceptance_criteria:
+  - id: AC-1
+    given: seeded database
+    when: GET /api/kyc/cases
+    then: returns all 24 cases with summary fields
+  - id: AC-2
+    when: GET /api/kyc/cases?status=pending&risk_level=high, or ?q=<name fragment>
+    then: only matching cases are returned
+  - id: AC-3
+    given: a pending case, reviewer persona
+    when: POST approve with a reason
+    then: 200, status is approved, updated_at changed
+  - id: AC-4
+    given: an approved case
+    when: POST approve (or any action)
+    then: 409 invalid_transition and the case is unchanged
+  - id: AC-5
+    given: a pending case
+    when: POST approve with reason "" or "   "
+    then: 422 validation_error and the case is unchanged
+  - id: AC-6
+    given: a review action succeeded
+    when: the database is reopened (new connection / app restart)
+    then: the new status is still present
+  - id: AC-7
+    given: a review action succeeded
+    then: exactly one new audit event exists with previous_status, new_status, actor, reason, timestamp
+  - id: AC-8
+    given: viewer persona
+    when: POST any action
+    then: 403 forbidden and the case is unchanged
+  - id: AC-9
+    given: escalated case, reviewer persona
+    when: POST approve or reject
+    then: 200 and the terminal status is set
+  - id: AC-10
+    kind: browser
+    then: queue loads, filters work, detail opens, approve-with-reason persists across refresh, audit entry shown, viewer sees no action buttons and backend rejects a forced request.
+
+non_goals:
+  - real identity provider or SSO
+  - real KYC vendor integration or document storage
+  - case assignment / re-assignment workflow
+  - pagination (24 records)
