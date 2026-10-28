@@ -146,6 +146,6 @@ timestamp helpers (both apps' private `_now`/`_iso` removed); `test_core` checks
 and that `transaction()` holds the write lock against a second connection; shared `useDebounced`/`useUrlParam` hooks and
 `AuditTimeline` component (both apps migrated, −60 lines); AGENTS.md rules 7–9 and a refreshed shared-code map; Skill
 steps rewritten where the two builds had to guess; spec headers state the conventions and AC-10 is a checklist; CI
-workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 31 passed; `tsc -b` clean; `npm test` → 4 passed;
+workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 33 passed; `tsc -b` clean; `npm test` → 4 passed;
 `vite build` clean. Deferred (P2): per-app roles, form primitives, spec schema, Playwright.
 

@@ -190,3 +190,36 @@ def test_concurrent_conflicting_toggles_do_not_both_succeed(client, conn, review
 def test_ac9_kyc_regression_health_lists_both_apps(client):
     assert client.get("/api/health").json()["apps"] == ["kyc", "feature_flags"]
     assert client.get("/api/kyc/cases").json()["total"] == 24
+
+
+def test_competing_writer_on_a_second_connection_gets_409_not_500(client, conn, reviewer_headers):
+    """Two real connections: connection B holds the write lock and flips the flag while request A is in flight.
+    A must wait (busy_timeout), re-read the committed state inside its own transaction and answer 409."""
+    import threading
+    import time
+
+    from app.core import db as db_module
+
+    b = db_module.connect()
+    result: dict[str, object] = {}
+
+    def request_a():
+        result["response"] = client.post(f"{BASE}/flags/{STAGING_OFF}/toggle", json={"enabled": True}, headers=reviewer_headers)
+
+    try:
+        b.execute("BEGIN IMMEDIATE")
+        b.execute("UPDATE feature_flags SET enabled = 1 WHERE id = ?", (STAGING_OFF,))
+        t = threading.Thread(target=request_a)
+        t.start()
+        time.sleep(0.3)
+        assert t.is_alive(), "request A should be blocked while B holds the write lock"
+        b.commit()
+        t.join(timeout=10)
+        assert not t.is_alive()
+    finally:
+        b.close()
+
+    r = result["response"]
+    assert r.status_code == 409, r.text  # type: ignore[union-attr]
+    assert conn.execute("SELECT enabled FROM feature_flags WHERE id = ?", (STAGING_OFF,)).fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM feature_flag_audit_events WHERE flag_id = ?", (STAGING_OFF,)).fetchone()[0] == 0

@@ -180,3 +180,38 @@ def test_concurrent_conflicting_actions_do_not_both_succeed(client, conn, review
     final = _case(client, PENDING)
     assert final["status"] == "approved"
     assert [e["reason"] for e in final["audit_events"]] == ["first"]
+
+
+def test_competing_writer_on_a_second_connection_gets_409_not_500(client, conn, reviewer_headers):
+    """Two real connections: connection B holds the write lock and approves the case while request A (reject) is in
+    flight. A must wait (busy_timeout), see the committed status inside its own transaction and answer 409."""
+    import threading
+    import time
+
+    from app.core import db as db_module
+
+    b = db_module.connect()
+    result: dict[str, object] = {}
+
+    def request_a():
+        result["response"] = client.post(
+            f"/api/kyc/cases/{PENDING}/actions", json={"action": "reject", "reason": "Late reject."}, headers=reviewer_headers
+        )
+
+    try:
+        b.execute("BEGIN IMMEDIATE")
+        b.execute("UPDATE kyc_cases SET status = 'approved' WHERE id = ?", (PENDING,))
+        t = threading.Thread(target=request_a)
+        t.start()
+        time.sleep(0.3)
+        assert t.is_alive(), "request A should be blocked while B holds the write lock"
+        b.commit()
+        t.join(timeout=10)
+        assert not t.is_alive()
+    finally:
+        b.close()
+
+    r = result["response"]
+    assert r.status_code == 409, r.text  # type: ignore[union-attr]
+    assert conn.execute("SELECT status FROM kyc_cases WHERE id = ?", (PENDING,)).fetchone()[0] == "approved"
+    assert conn.execute("SELECT COUNT(*) FROM kyc_audit_events WHERE case_id = ?", (PENDING,)).fetchone()[0] == 0
