@@ -69,8 +69,9 @@ frontend/src/apps/registry.ts         app list used for navigation and routing
 8. **Naming.** `app.id` is snake_case and is used verbatim as the Python package, the API
    prefix (`/api/<app_id>`), the table prefix and the spec filename `specs/<app_id>.yaml`
    (enforced by `tests/test_core.py`). Frontend routes may be kebab-case (`/feature-flags`).
-9. **Audit tables are per app** (`<app_id>_audit_events`) for now; render them with the shared
-   `AuditTimeline`. Promote to one shared audit table when a third app needs one.
+9. **Audit tables are per app** for now, named `<entity>_audit_events` next to the entity table
+   (`kyc_cases` → `kyc_audit_events`, `feature_flags` → `feature_flag_audit_events`); render them
+   with the shared `AuditTimeline`. Promote to one shared audit table when a third app needs one.
 
 ## Authorization (simulated — read this twice)
 
