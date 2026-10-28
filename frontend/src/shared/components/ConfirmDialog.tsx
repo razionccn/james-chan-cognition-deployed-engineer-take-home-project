@@ -1,11 +1,16 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, type ButtonProps } from './Button'
 
 /**
  * Confirmation modal for consequential actions. Optionally collects a
  * free-text reason, which is passed to `onConfirm`. `requireReason` makes the
  * reason mandatory; `collectReason` shows the field but keeps it optional.
+ *
+ * Keyboard: Escape cancels this dialog (not whatever is underneath it) unless `busy`; Tab cycles
+ * inside the dialog; focus returns to the element that opened it.
  */
+const FOCUSABLE = 'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+
 export function ConfirmDialog({
   open,
   title,
@@ -34,16 +39,53 @@ export function ConfirmDialog({
   onConfirm: (reason: string) => void
 }) {
   const [reason, setReason] = useState('')
+  const panelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (open) setReason('')
   }, [open])
+  useEffect(() => {
+    if (!open) return
+    const opener = document.activeElement as HTMLElement | null
+    const panel = panelRef.current
+    const first = panel?.querySelector<HTMLElement>(FOCUSABLE)
+    if (first && !panel?.contains(document.activeElement)) first.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        if (!busy) onCancel()
+        return
+      }
+      if (e.key === 'Tab' && panel) {
+        const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
+        if (items.length === 0) return
+        const firstItem = items[0]
+        const lastItem = items[items.length - 1]
+        if (e.shiftKey && document.activeElement === firstItem) {
+          e.preventDefault()
+          lastItem.focus()
+        } else if (!e.shiftKey && document.activeElement === lastItem) {
+          e.preventDefault()
+          firstItem.focus()
+        } else if (!panel.contains(document.activeElement)) {
+          e.preventDefault()
+          firstItem.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      opener?.focus?.()
+    }
+  }, [open, busy, onCancel])
   if (!open) return null
   const reasonMissing = requireReason && reason.trim().length === 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div className="absolute inset-0 bg-slate-900/40" onClick={busy ? undefined : onCancel} aria-hidden />
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-2xl">
+      <div ref={panelRef} className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-2xl">
         <h2 id="confirm-title" className="text-base font-semibold text-slate-900">
           {title}
         </h2>
