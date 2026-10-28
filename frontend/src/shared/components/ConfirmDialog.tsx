@@ -40,12 +40,15 @@ export function ConfirmDialog({
 }) {
   const [reason, setReason] = useState('')
   const panelRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
+  const latest = useRef({ busy, onCancel })
+  latest.current = { busy, onCancel }
   useEffect(() => {
     if (open) setReason('')
   }, [open])
   useEffect(() => {
     if (!open) return
-    const opener = document.activeElement as HTMLElement | null
+    openerRef.current = document.activeElement as HTMLElement | null
     const panel = panelRef.current
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE)
     if (first && !panel?.contains(document.activeElement)) first.focus()
@@ -53,7 +56,7 @@ export function ConfirmDialog({
       if (e.key === 'Escape') {
         e.stopImmediatePropagation()
         e.preventDefault()
-        if (!busy) onCancel()
+        if (!latest.current.busy) latest.current.onCancel()
         return
       }
       if (e.key === 'Tab' && panel) {
@@ -76,9 +79,11 @@ export function ConfirmDialog({
     window.addEventListener('keydown', onKey, true)
     return () => {
       window.removeEventListener('keydown', onKey, true)
-      opener?.focus?.()
+      const opener = openerRef.current
+      openerRef.current = null
+      if (opener && opener.isConnected) opener.focus()
     }
-  }, [open, busy, onCancel])
+  }, [open])
   if (!open) return null
   const reasonMissing = requireReason && reason.trim().length === 0
 

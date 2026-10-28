@@ -24,8 +24,8 @@ def list_flags(
     clauses: list[str] = []
     params: list[Any] = []
     if q:
-        clauses.append("(lower(name) LIKE ? OR lower(id) LIKE ?)")
-        like = f"%{q.strip().lower()}%"
+        clauses.append("(lower(name) LIKE ? ESCAPE '\\' OR lower(id) LIKE ? ESCAPE '\\')")
+        like = "%" + q.strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         params += [like, like]
     if environment:
         clauses.append("environment = ?")
