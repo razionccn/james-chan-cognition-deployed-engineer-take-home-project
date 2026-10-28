@@ -3,7 +3,8 @@ import { Button, type ButtonProps } from './Button'
 
 /**
  * Confirmation modal for consequential actions. Optionally collects a
- * required free-text reason, which is passed to `onConfirm`.
+ * free-text reason, which is passed to `onConfirm`. `requireReason` makes the
+ * reason mandatory; `collectReason` shows the field but keeps it optional.
  */
 export function ConfirmDialog({
   open,
@@ -12,6 +13,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   confirmVariant = 'primary',
   requireReason = false,
+  collectReason = requireReason,
   reasonLabel = 'Reason',
   busy = false,
   error,
@@ -24,6 +26,7 @@ export function ConfirmDialog({
   confirmLabel?: string
   confirmVariant?: ButtonProps['variant']
   requireReason?: boolean
+  collectReason?: boolean
   reasonLabel?: string
   busy?: boolean
   error?: string | null
@@ -45,9 +48,10 @@ export function ConfirmDialog({
           {title}
         </h2>
         {description && <div className="mt-2 text-sm text-slate-600">{description}</div>}
-        {requireReason && (
+        {(collectReason || requireReason) && (
           <label className="mt-4 block text-sm font-medium text-slate-700">
-            {reasonLabel} <span className="text-red-600">*</span>
+            {reasonLabel}
+            {requireReason && <span className="text-red-600"> *</span>}
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}

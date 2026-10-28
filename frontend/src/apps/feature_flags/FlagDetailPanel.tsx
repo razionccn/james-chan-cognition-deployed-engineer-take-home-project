@@ -141,7 +141,7 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
         }
         confirmLabel={pendingValue ? 'Enable flag' : 'Disable flag'}
         confirmVariant={pendingValue ? 'primary' : 'warning'}
-        requireReason={false}
+        collectReason
         reasonLabel="Reason (optional)"
         busy={submitting}
         error={actionError}
