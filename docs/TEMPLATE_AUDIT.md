@@ -104,3 +104,20 @@ Per-app roles (C-5); form primitives (`TextField`, `SelectField`) — still abse
 1. **Clean?** Yes. Both builds followed the documents without needing the original conversation; the fresh-session premise held (M §F).
 2. **Easy to use?** Mostly. The two-list drift (AGENTS.md vs Skill vs `index.ts`) and the hyphen/underscore ambiguity are the only things that actively misled.
 3. **Comprehensive?** Not yet. Every one of the five review findings on app #2 (concurrency 500, second-precision timestamps, seed history, spec filename, plus the browser-found optional-reason gap) corresponds to a convention that exists only in KYC's code or in nobody's head. Writing those five conventions down (P0) is cheap; the duplication in §E is the honest cost of "reuse by copying", and app #3 should not pay it a third time (P1).
+
+---
+
+## H. Fixes applied (same PR, after the audit)
+
+| Audit item | Commit content | Verified by |
+|---|---|---|
+| P0-1, P0-5, C-1 | AGENTS.md rules 7–9 (timestamps, naming, per-app audit), refreshed shared-code map; Skill frontmatter/steps 1–7, 9 updated (naming, parse check, `index.ts` as the component source of truth, shared-change regression rule, timestamps/conditional write, frontend idioms, two-connection tests, `npm test`/`build`, metrics in the summary) | read-through |
+| P0-2, C-7, D-3 | `tests/test_core.py::test_every_installed_app_has_a_matching_spec` (parametrised over `installed_apps()`) | `pytest` 31 passed |
+| P0-3, D-6, D-1, D-5, D-7, D-8 | Both spec headers state the conventions; wrong "task brief" note removed; seed-consistency requirement added (KYC seed checked: 0 mismatches over 12 cases); AC-10 split into bullets | `yaml.safe_load` + query |
+| P0-4, C-2, C-4, P1-1 | `app/core/time.py` (`utc_now_iso`, `to_iso`, `SEED_EPOCH`); both services/seeds use it; AGENTS.md rule 3 documents `BEGIN IMMEDIATE` | `pytest` 31 passed |
+| P1-2 | `test_core.py::test_transaction_takes_the_write_lock_up_front` — two real connections | `pytest` |
+| P1-3, C-6, E | `shared/hooks.ts` (`useDebounced`, `useUrlParam`), `shared/components/AuditTimeline.tsx`; both pages/panels use them; KYC `formatDate` removed in favour of `shared/format.ts` (−60 net lines in the two apps) | `tsc -b`, `vite build`, browser re-check |
+| P1-4, C-3 | Decision recorded in AGENTS.md rule 9: audit tables stay per app until a third app; `AuditTimeline` removes the UI half of the duplication | — |
+| P1-7, C-9 | `.github/workflows/ci.yml` (pytest, typecheck, Vitest, build); `ConfirmDialog.test.tsx` (4 tests: required, optional, none, reset) | `npm test` 4 passed |
+
+Not done (P2): per-app roles, form primitives, spec JSON-Schema, Playwright smoke test.

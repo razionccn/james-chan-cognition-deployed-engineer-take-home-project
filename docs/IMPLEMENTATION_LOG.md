@@ -138,3 +138,14 @@ Post-review (Devin Review on PR #5): `transaction()` in `core/db.py` switched to
 too); seed audit timestamps aligned with the flags' `updated_at`. `pytest` → **28 passed**. Spec filename
 (`feature_flags.yaml` vs `<app_id>.yaml`) escalated to the owner because the brief named the file explicitly.
 
+## Milestone 6 — Template audit after two apps and its P0/P1 fixes (PR #5)
+
+`docs/TEMPLATE_AUDIT.md` scores the Skill, AGENTS.md/template code and the spec files against what the two builds
+actually needed (7 / 6.5 / 7 out of 10). Fixes applied in the same PR, each as its own commit: shared `core/time.py`
+timestamp helpers (both apps' private `_now`/`_iso` removed); `test_core` checks `specs/<APP_ID>.yaml` exists and matches
+and that `transaction()` holds the write lock against a second connection; shared `useDebounced`/`useUrlParam` hooks and
+`AuditTimeline` component (both apps migrated, −60 lines); AGENTS.md rules 7–9 and a refreshed shared-code map; Skill
+steps rewritten where the two builds had to guess; spec headers state the conventions and AC-10 is a checklist; CI
+workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 31 passed; `tsc -b` clean; `npm test` → 4 passed;
+`vite build` clean. Deferred (P2): per-app roles, form primitives, spec schema, Playwright.
+
