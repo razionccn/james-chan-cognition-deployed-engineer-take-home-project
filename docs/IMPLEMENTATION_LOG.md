@@ -170,3 +170,13 @@ to pin a UI element to an endpoint) and `specs/README.md` (field-by-field guide,
 applies when a spec does not pin one). `test_core` parses every `specs/*.yaml` including the template. Skill step 1, README §6
 and AGENTS.md point at the kit.
 
+## Milestone 9 — Control run: Feature-Flag Admin Panel without the template (PR #9)
+
+A fresh child session with no repository attached built the same tool from an empty directory with the
+same spec (template references neutralised) and the same fixed stack, delivered as a git bundle and pushed
+as orphan branch `baseline/no-template-feature-flags` (`67c6cb1`). Measured by the parent with `cloc` and
+commit timestamps: spec → first green build 7 min 20 s vs 2 min 29 s on the template; 1 257 vs 619 source
+lines; 223 vs 142 test lines; browser-found defects 3 vs 1 — the control rediscovered two bugs the template
+fixed in PR #7 (Escape closing dialog + panel, stale list row after 409). Verified independently: `pytest`
+→ `22 passed in 0.41s`, `npm run typecheck` clean, `vite build` ✓. Full report:
+`docs/FEATURE_FLAG_BASELINE_METRICS.md`.
