@@ -49,7 +49,7 @@ class CaseListResponse(BaseModel):
 
 class ReviewActionRequest(BaseModel):
     action: Action
-    reason: str = Field(default="")
+    reason: str = Field(default="", max_length=2000)
 
 
 class MetaResponse(BaseModel):

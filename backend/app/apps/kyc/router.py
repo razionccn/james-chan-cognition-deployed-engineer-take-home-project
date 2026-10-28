@@ -26,7 +26,7 @@ def get_meta() -> MetaResponse:
 
 @router.get("/cases", response_model=CaseListResponse)
 def list_cases(
-    q: str | None = Query(default=None, description="Customer name or case id fragment"),
+    q: str | None = Query(default=None, max_length=100, description="Customer name or case id fragment"),
     status: str | None = Query(default=None),
     risk_level: str | None = Query(default=None),
     conn: sqlite3.Connection = Depends(get_db),

@@ -1,4 +1,4 @@
-"""Workflow definition for KYC cases. Mirrors specs/kyc-review.yaml `workflow`."""
+"""Workflow definition for KYC cases. Mirrors specs/kyc.yaml `workflow`."""
 from typing import Literal
 
 Status = Literal["pending", "approved", "rejected", "escalated"]

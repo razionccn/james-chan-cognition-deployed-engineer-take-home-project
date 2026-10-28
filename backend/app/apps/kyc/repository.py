@@ -44,8 +44,15 @@ def list_audit_events(conn: sqlite3.Connection, case_id: str) -> list[dict[str, 
     return [dict(r) for r in rows]
 
 
-def update_status(conn: sqlite3.Connection, case_id: str, new_status: str, updated_at: str) -> None:
-    conn.execute("UPDATE kyc_cases SET status = ?, updated_at = ? WHERE id = ?", (new_status, updated_at, case_id))
+def update_status(
+    conn: sqlite3.Connection, case_id: str, new_status: str, updated_at: str, *, expected_status: str
+) -> int:
+    """Conditional update: only succeeds if the row is still in ``expected_status``. Returns rows changed."""
+    cur = conn.execute(
+        "UPDATE kyc_cases SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
+        (new_status, updated_at, case_id, expected_status),
+    )
+    return cur.rowcount
 
 
 def insert_audit_event(

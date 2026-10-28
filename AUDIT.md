@@ -135,7 +135,7 @@ exception), CORS (localhost origins only), `X-Demo-User` fallback (unknown → v
 
 ## F. Prioritised recommendations
 
-### P0 — fix before recording the Loom (≈ 1–1.5 h total)
+### P0 — fix before recording the Loom (≈ 1–1.5 h total) — **DONE** (see `docs/IMPLEMENTATION_LOG.md` Milestone 4; tests now 15 passed)
 | # | Task | Effort | Why |
 |---|---|---|---|
 | P0-1 | Unify naming to **Internal Tools Template** across README, AGENTS.md, Skill, log, PR titles; remove the "Internal Tools Template" parenthetical or keep exactly one, clearly labelled as the brief's term; rename branch on next PR | 15 min | Three names in one repo reads as unfinished |

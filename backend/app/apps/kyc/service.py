@@ -1,4 +1,4 @@
-"""Business rules for the KYC review workflow (BR-1..BR-6 in specs/kyc-review.yaml)."""
+"""Business rules for the KYC review workflow (BR-1..BR-6 in specs/kyc.yaml)."""
 from __future__ import annotations
 
 import sqlite3
@@ -23,6 +23,13 @@ def _validate_filter(name: str, value: str | None, allowed: tuple[str, ...]) -> 
     if value not in allowed:
         raise ValidationError(f"Invalid {name} '{value}'. Expected one of: {', '.join(allowed)}.")
     return value
+
+
+def _transition_message(action: str, status: str) -> str:
+    return (
+        f"Cannot {action} a case with status '{status}'. "
+        f"Allowed actions: {', '.join(allowed_actions(status)) or 'none (terminal)'}."
+    )
 
 
 def list_cases(conn: sqlite3.Connection, *, q: str | None, status: str | None, risk_level: str | None) -> list[dict[str, Any]]:
@@ -56,23 +63,27 @@ def apply_review_action(
     if not cleaned_reason:
         raise ValidationError("A reason is required for every review action.")
 
-    # BR-5
-    case = repository.get_case(conn, case_id)
-    if case is None:
-        raise NotFoundError(f"KYC case '{case_id}' was not found.")
-
-    # BR-2
-    target = next_status(action, case["status"])
-    if target is None:
-        raise InvalidTransitionError(
-            f"Cannot {action} a case with status '{case['status']}'. "
-            f"Allowed actions: {', '.join(allowed_actions(case['status'])) or 'none (terminal)'}."
-        )
-
-    # BR-4: status update + audit event in one transaction.
     now = _now()
+    # BR-4: read, transition check, status update and audit event in one transaction.
     with transaction(conn):
-        repository.update_status(conn, case_id, target, now)
+        # BR-5
+        case = repository.get_case(conn, case_id)
+        if case is None:
+            raise NotFoundError(f"KYC case '{case_id}' was not found.")
+
+        # BR-2
+        target = next_status(action, case["status"])
+        if target is None:
+            raise InvalidTransitionError(_transition_message(action, case["status"]))
+
+        # Guard against a concurrent writer that changed the status between read and write.
+        changed = repository.update_status(conn, case_id, target, now, expected_status=case["status"])
+        if changed != 1:
+            current = repository.get_case(conn, case_id)
+            raise InvalidTransitionError(
+                _transition_message(action, current["status"] if current else "unknown")
+                + " The case was updated by someone else; the view has been refreshed."
+            )
         repository.insert_audit_event(
             conn,
             case_id=case_id,

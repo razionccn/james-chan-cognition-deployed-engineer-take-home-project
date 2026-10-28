@@ -84,3 +84,14 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
 - Audit history rendered "Rejectd by …" (label + "d"). Added explicit past-tense labels.
 - A stale detail panel (another reviewer acted first) showed the 409 inline but kept stale status/buttons after Cancel.
   Failed actions now refetch the case and the queue so the UI reconciles to the backend state. Both re-verified in the browser.
+
+## Milestone 4 — Audit and P0 fixes
+
+- `AUDIT.md` written (functional matrix, template completeness, Power Apps comparison, risks, P0/P1/P2, verdict).
+- P0 fixes landed: naming unified to **Internal Tools Template** (PR #1 replaced by PR #3 on `devin/internal-tools-template`);
+  stale `kyc-review.yaml` references and Node version claim corrected; `init-db --seed` skips non-empty tables with a hint;
+  `RequestValidationError` and unexpected exceptions now use the `{"error": {...}}` envelope; KYC transition check moved
+  inside the write transaction with a conditional `UPDATE … WHERE status = ?` guard (409 on conflict); `reason` ≤ 2000 chars,
+  `q` ≤ 100 chars. Two new tests: envelope/limits and a simulated stale-read conflict.
+
+Verification: `python -m pytest` → **15 passed**.

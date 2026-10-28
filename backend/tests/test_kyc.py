@@ -1,4 +1,4 @@
-"""Acceptance tests for specs/kyc-review.yaml (AC-1 .. AC-9). All go through HTTP + real SQLite."""
+"""Acceptance tests for specs/kyc.yaml (AC-1 .. AC-9). All go through HTTP + real SQLite."""
 from app.core import db as db_module
 from app.main import create_app
 from fastapi.testclient import TestClient
@@ -144,3 +144,39 @@ def test_meta_exposes_transitions(client):
     assert meta["transitions"]["pending"] == ["approve", "reject", "escalate"]
     assert meta["transitions"]["escalated"] == ["approve", "reject"]
     assert meta["transitions"]["approved"] == [] and meta["transitions"]["rejected"] == []
+
+
+def test_request_validation_uses_error_envelope(client, reviewer_headers):
+    r = client.post(f"/api/kyc/cases/{PENDING}/actions", json={"action": "bogus", "reason": "x"}, headers=reviewer_headers)
+    assert r.status_code == 422
+    body = r.json()
+    assert body["error"]["code"] == "validation_error" and "action" in body["error"]["message"]
+
+    too_long = client.post(f"/api/kyc/cases/{PENDING}/actions", json={"action": "approve", "reason": "x" * 2001}, headers=reviewer_headers)
+    assert too_long.status_code == 422 and too_long.json()["error"]["code"] == "validation_error"
+    assert client.get("/api/kyc/cases", params={"q": "x" * 101}).status_code == 422
+    assert _case(client, PENDING)["status"] == "pending"
+
+
+def test_concurrent_conflicting_actions_do_not_both_succeed(client, conn, reviewer_headers, monkeypatch):
+    """Simulate a reviewer whose read happened before another reviewer approved the case."""
+    from app.apps.kyc import repository, service
+
+    real_get_case = repository.get_case
+    stale = dict(real_get_case(conn, PENDING))  # status == pending
+
+    def stale_then_real(c, case_id):
+        monkeypatch.setattr(service.repository, "get_case", real_get_case)
+        return stale
+
+    first = client.post(f"/api/kyc/cases/{PENDING}/actions", json={"action": "approve", "reason": "first"}, headers=as_persona("ben.reviewer"))
+    assert first.status_code == 200
+
+    monkeypatch.setattr(service.repository, "get_case", stale_then_real)
+    second = client.post(f"/api/kyc/cases/{PENDING}/actions", json={"action": "reject", "reason": "second"}, headers=reviewer_headers)
+    assert second.status_code == 409
+    assert second.json()["error"]["code"] == "invalid_transition"
+
+    final = _case(client, PENDING)
+    assert final["status"] == "approved"
+    assert [e["reason"] for e in final["audit_events"]] == ["first"]
