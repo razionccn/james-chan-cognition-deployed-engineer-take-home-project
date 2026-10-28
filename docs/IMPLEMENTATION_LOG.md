@@ -62,7 +62,13 @@ curl :8000/api/health                                 → {"status":"ok","apps":
 curl -X POST :5173/api/kyc/cases/KYC-1001/actions (no persona header)
                                                       → 403 {"error":{"code":"forbidden",...}}   (viewer fallback through the Vite proxy)
 ```
-Browser walkthrough (AC-10): pending — recorded below when performed.
+Browser walkthrough (AC-10): performed by Devin's testing agent against the local Vite + FastAPI app (recording attached to PR #2).
+Passed: 24-case queue with all 7 columns; search by name/id, status/risk filters, combined filter, clear, empty state;
+row click + keyboard Enter open the panel, URL `?case=` survives reload, Escape/backdrop close; findings and history render;
+viewer sees no actions, reviewer sees exactly the allowed actions per state; confirm disabled for empty/whitespace reason;
+approve → toast, badge/table/timestamp update, audit entry with the exact reason; reason field empty when starting the next
+action; state survives hard refresh **and a real backend restart**; escalate → reject shows two newest-first events;
+forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (mobile nav, horizontal table scroll).
 
 ## Milestone 1.1 — Devin Review fixes on PR #1
 
@@ -72,3 +78,9 @@ Browser walkthrough (AC-10): pending — recorded below when performed.
   audit trail. Now resets on every open.
 - `DataTable` clickable rows were not keyboard reachable → `tabIndex=0`, `role=button`, Enter/Space activation, only when the
   row itself (not a nested control) is the event target.
+
+## Milestone 3 — Fixes from browser testing
+
+- Audit history rendered "Rejectd by …" (label + "d"). Added explicit past-tense labels.
+- A stale detail panel (another reviewer acted first) showed the 409 inline but kept stale status/buttons after Cancel.
+  Failed actions now refetch the case and the queue so the UI reconciles to the backend state. Both re-verified in the browser.

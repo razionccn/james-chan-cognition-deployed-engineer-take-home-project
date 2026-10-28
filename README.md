@@ -104,7 +104,7 @@ FastAPI app and a real SQLite file (no mocks):
 | `test_ac9_escalated_case_can_be_approved_or_rejected` | escalated → approved / rejected |
 | `test_unknown_case_returns_404`, `test_meta_exposes_transitions` | 404 envelope; transition table |
 
-Browser verification (AC-10): see `docs/IMPLEMENTATION_LOG.md` for what was actually walked through.
+Browser verification (AC-10) was performed end to end (including persistence across a backend restart and backend-enforced 403/409/422); the exact checklist is in `docs/IMPLEMENTATION_LOG.md` and the recording is on PR #2.
 
 ## 6. Building the next internal tool with the template
 
@@ -145,6 +145,7 @@ frontend $ npm run build           → ✓ built
 
 Corrections made during the session
 - Vite's current template (Vite 8 / TS 7 / React 19.3) failed to install under npm 10 → pinned React 18 / Vite 5 / TS 5 / Tailwind 3.
+- Browser testing found two UI bugs: an audit label typo ("Rejectd by") and a stale detail panel that kept old status/buttons after a 409 conflict; both fixed (failed actions now refetch case + queue) and re-verified.
 - Devin Review on PR #1: spec YAML did not parse (list/map mix, unquoted `enum [...]`) → fixed and validated with `yaml.safe_load`; spec renamed to `specs/kyc.yaml` to match the `specs/<app_id>.yaml` convention; `ConfirmDialog` reset its reason on every open; `DataTable` rows made keyboard-navigable without stealing Enter from nested controls.
 
 Not completed / out of scope: feature-flag second module (stretch goal, not built — reuse is
