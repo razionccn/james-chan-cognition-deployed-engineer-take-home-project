@@ -170,13 +170,15 @@ to pin a UI element to an endpoint) and `specs/README.md` (field-by-field guide,
 applies when a spec does not pin one). `test_core` parses every `specs/*.yaml` including the template. Skill step 1, README §6
 and AGENTS.md point at the kit.
 
-## Milestone 9 — Control run: Feature-Flag Admin Panel without the template (PR #9)
+## Milestone 9 — Control runs: Feature-Flag Admin Panel without the template (PR #9)
 
-A fresh child session built the same tool from an empty directory with the same spec (template
-references neutralised) and the same fixed stack, pushed as orphan branch `baseline/no-template-feature-flags`
-(`ca88e20`). Measured by the parent session with `cloc` and commit timestamps: spec → first green build
-7 min 03 s vs 2 min 29 s on the template; 1 303 vs 619 source lines, 265 vs 142 test lines; one
-browser-found defect each. Verified independently: `pytest` → `28 passed in 1.50s`, `tsc -b` clean,
-`vite build` ✓. Material caveat: the harness injected `AGENTS.md` into the control at START (event log),
-so it is a "no template code / no Skill" control, not a "no template knowledge" one. Full report:
-`docs/FEATURE_FLAG_BASELINE_METRICS.md`.
+Two fresh child sessions built the same tool from an empty directory with the same spec (template
+references neutralised) and the same fixed stack. Control 1 (`baseline/no-template-feature-flags`,
+`ca88e20`) had `AGENTS.md` injected by the harness at START (event log), so a clean control 2 with no
+repository attached followed (`baseline/no-template-feature-flags-run2`, `67c6cb1`, delivered as a git
+bundle). Measured by the parent with `cloc` and commit timestamps: spec → first green build 7 min 03 s /
+7 min 20 s vs 2 min 29 s on the template; 1 303 / 1 257 vs 619 source lines; 265 / 223 vs 142 test
+lines; browser-found defects 1 / 3 vs 1 — control 2 rediscovered two bugs the template fixed in PR #7
+(Escape closing dialog + panel, stale list row after 409). Verified independently: control 1 `pytest`
+→ `28 passed`, `tsc -b` clean, build ✓; control 2 `pytest` → `22 passed`, `npm run typecheck` clean,
+build ✓. Full report: `docs/FEATURE_FLAG_BASELINE_METRICS.md`.
