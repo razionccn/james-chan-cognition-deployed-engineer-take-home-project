@@ -87,7 +87,8 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
 
 ## Milestone 4 — Audit and P0 fixes
 
-- `AUDIT.md` written (functional matrix, template completeness, Power Apps comparison, risks, P0/P1/P2, verdict).
+- First audit written (functional matrix, template completeness, Power Apps comparison, risks, P0/P1/P2, verdict);
+  removed after Milestone 6 — its open items are carried in `docs/TEMPLATE_AUDIT.md`, which supersedes it.
 - P0 fixes landed: naming unified to **Internal Tools Template** (PR #1 replaced by PR #3 on `devin/internal-tools-template`);
   stale `kyc-review.yaml` references and Node version claim corrected; `init-db --seed` skips non-empty tables with a hint;
   `RequestValidationError` and unexpected exceptions now use the `{"error": {...}}` envelope; KYC transition check moved

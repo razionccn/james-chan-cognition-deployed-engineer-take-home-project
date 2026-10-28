@@ -60,7 +60,7 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 | Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py`, `test_feature_flags.py` |
 | Log | `docs/IMPLEMENTATION_LOG.md` | Milestones, decisions, assumptions, actual test output |
 | Metrics | `docs/FEATURE_FLAG_BUILD_METRICS.md` | Baseline vs. final line counts, elapsed time, reuse, per-AC verification and skeptical evaluation of the second app |
-| Audits | `AUDIT.md` (after app #1), `docs/TEMPLATE_AUDIT.md` (after app #2) | Skeptical reviews with scores, evidence and prioritised fixes; `TEMPLATE_AUDIT.md` §H lists what was applied |
+| Audit | `docs/TEMPLATE_AUDIT.md` | Skeptical review after two apps: scores, evidence, prioritised fixes; §H lists what was applied |
 
 Key decisions
 - **Business rules live only in the backend** (`service.py`). The UI hides disallowed actions for UX, but every rule is re-checked server-side.

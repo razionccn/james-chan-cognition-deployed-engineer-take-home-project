@@ -2,7 +2,7 @@
 
 Experiment: build a **second** internal application (Feature-Flag Admin Panel) on the existing
 **Internal Tools Template** in a fresh Devin session, using only what is in the repository
-(`AGENTS.md`, `.agents/skills/create-internal-tool/SKILL.md`, `AUDIT.md`, `specs/kyc.yaml`,
+(`AGENTS.md`, `.agents/skills/create-internal-tool/SKILL.md`, the first audit (since removed; superseded by `docs/TEMPLATE_AUDIT.md`), `specs/kyc.yaml`,
 `README.md`, `docs/IMPLEMENTATION_LOG.md`, and the code) as project knowledge.
 
 Everything in this file is either a measured value with its measurement source, or is marked
@@ -103,13 +103,13 @@ Backend (`backend/app/core/`): `connect()` / `get_db` / `transaction()` / `init_
 auto-mount of each app's router at `/api/<app_id>` (`main.py`). Tests: `conftest.py` fixtures `client`,
 `conn`, `reviewer_headers`, `viewer_headers`, `as_persona()`.
 
-Known gaps noted in `AUDIT.md` that affect this app: no form/edit/toggle primitive, no `api.put/patch`,
+Known gaps noted in the first audit that affect this app: no form/edit/toggle primitive, no `api.put/patch`,
 audit logging is per-app (no shared audit table/helper), roles are a global `reviewer`/`viewer` pair,
 `pages.elements` in the spec are prose only.
 
 ### 0.5 Outstanding defects check and smallest viable implementation
 
-`AUDIT.md` P0 items are marked DONE and verified by `test_request_validation_uses_error_envelope` and
+The first audit's P0 items are marked DONE and verified by `test_request_validation_uses_error_envelope` and
 `test_concurrent_conflicting_actions_do_not_both_succeed` (both pass at baseline). No open correctness
 defect in the template would invalidate the new app.
 
@@ -259,7 +259,7 @@ listed only because the brief asks for the denominator to be explicit.
   (≈40 lines); a `useListFilters` hook would remove them.
 - `_now()` ISO timestamp helper and the "previous/new/actor/reason/created_at" audit row shape exist twice.
 - Personas are global: there is no app-scoped role, so "may toggle flags" is expressed as the KYC role `reviewer`.
-- No frontend tests and no CI in the template (already called out in `AUDIT.md`); the browser checklist is manual.
+- No frontend tests and no CI in the template (already called out in the first audit); the browser checklist is manual.
 
 ## E. Functionality Verification
 
@@ -331,7 +331,7 @@ Browser evidence = recorded testing-agent runs at `085d208` (full checklist) and
 - Timings are wall-clock on a VM, dominated by model generation; they are not comparable to human engineering hours.
 - The second app is close in shape to the first (a table of records with an audited, role-gated state change).
   A tool needing forms, file upload, charts, multi-step wizards or cross-app joins would stress parts of the
-  template that this experiment did not touch (`AUDIT.md` already lists the missing form/toggle primitives).
+  template that this experiment did not touch (the first audit already listed the missing form/toggle primitives).
 - Browser verification was performed by a testing agent, not a human; the forced 403 checks were scripted
   requests issued from the browser, not UI clicks (the UI correctly offers no way to attempt them).
 - No frontend unit tests, no CI, no accessibility audit, no load/concurrency test across processes.

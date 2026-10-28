@@ -33,7 +33,7 @@ Spec gaps: assignment semantics (any reviewer may act); escalated → re-escalat
 Skill gaps: none recorded in the first build (the Skill was written alongside the app).
 Template gaps: none; the app added no shared code.
 Found by review/browser, not tests: 100k-char reason accepted (→ `max_length`); Pydantic 422 outside the error envelope (→ handler); TOCTOU on status (→ conditional `UPDATE`); `--seed` without `--reset` crash (→ guard). All fixed in Milestone 4 with tests.
-Still open: form primitives; shared audit; per-app roles; CI; frontend tests (see `AUDIT.md`).
+Still open: form primitives; shared audit; per-app roles; CI; frontend tests (carried into `docs/TEMPLATE_AUDIT.md`).
 
 ## feature_flags — 2026-10-28 — PR #5 (fresh session, repository-only context)
 Elapsed: 22 min 08 s to docs commit   Shared/core lines changed: 49   App lines: 570   Tests: 13 (+1 later)

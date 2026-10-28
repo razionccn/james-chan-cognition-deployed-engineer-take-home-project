@@ -7,7 +7,8 @@ Panel, PR #5, fresh session with repository-only context). Code as of PR #5 head
 
 Evidence keys: **S** = Skill text, **A** = AGENTS.md, **C** = code (`grep`/`wc`/`diff` in this session),
 **R** = Devin Review finding on PR #5, **M** = `docs/FEATURE_FLAG_BUILD_METRICS.md`, **L** = `docs/IMPLEMENTATION_LOG.md`.
-Effort figures are estimates, not measurements. The earlier `AUDIT.md` (after app #1) is referenced as `AUDIT P1-x`.
+Effort figures are estimates, not measurements. The earlier audit written after app #1 (since removed from the repo;
+its recommendations were P1-1 form primitives, P1-2 shared audit, P1-3 per-app roles, P1-6 CI, P1-7 frontend tests) is referenced as `AUDIT P1-x`.
 
 ## A. Scores
 
