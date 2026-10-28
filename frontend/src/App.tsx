@@ -130,8 +130,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+      <header className="sticky top-0 z-40 h-16 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Fintech Operations Console</p>
             <h1 className="text-xl font-semibold text-slate-900">Feature-Flag Admin Panel</h1>

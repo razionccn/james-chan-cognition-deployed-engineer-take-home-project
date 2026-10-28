@@ -30,7 +30,7 @@ export function FlagDetailPanel({ flagId, flag, loading, error, persona, canTogg
     <aside
       data-testid="flag-detail-panel"
       aria-label="Flag detail"
-      className="fixed inset-y-0 right-0 z-30 flex w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl"
+      className="fixed bottom-0 right-0 top-16 z-30 flex w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl"
     >
       <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
         <div className="min-w-0">
