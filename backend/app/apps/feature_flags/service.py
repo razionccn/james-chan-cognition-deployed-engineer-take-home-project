@@ -51,10 +51,10 @@ def toggle_flag(conn: sqlite3.Connection, *, flag_id: str, enabled: bool, reason
     # BR-2: authorization first, so viewers get 403 even for unknown or locked flags.
     require_role(persona, *TOGGLE_ROLES)  # type: ignore[arg-type]
     cleaned_reason = (reason or "").strip()
-    now = utc_now_iso()
 
     # BR-4: read, rule checks, conditional update and audit event in one transaction.
     with transaction(conn):
+        now = utc_now_iso()  # after the write lock, so it never predates a commit we waited for
         flag = repository.get_flag(conn, flag_id)
         if flag is None:  # BR-5
             raise NotFoundError(f"Feature flag '{flag_id}' was not found.")

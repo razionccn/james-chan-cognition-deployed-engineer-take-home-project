@@ -158,6 +158,9 @@ def test_unknown_flag_returns_404_and_request_validation_envelope(client, review
 
     r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": "maybe"}, headers=reviewer_headers)
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
+    for loose in ("yes", "true", 1):  # StrictBool: coercible-looking values are rejected too
+        r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": loose}, headers=reviewer_headers)
+        assert r.status_code == 422, (loose, r.text)
     r = client.post(f"{BASE}/flags/{STAGING_ON}/toggle", json={"enabled": False, "reason": "x" * 501}, headers=reviewer_headers)
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
 
@@ -223,3 +226,59 @@ def test_competing_writer_on_a_second_connection_gets_409_not_500(client, conn, 
     assert r.status_code == 409, r.text  # type: ignore[union-attr]
     assert conn.execute("SELECT enabled FROM feature_flags WHERE id = ?", (STAGING_OFF,)).fetchone()[0] == 1
     assert conn.execute("SELECT COUNT(*) FROM feature_flag_audit_events WHERE flag_id = ?", (STAGING_OFF,)).fetchone()[0] == 0
+
+
+# ---------------------------------------------------------------------------------------------
+# Exhaustive rule matrix: every seeded flag (environment × enabled) × target value × persona.
+# ---------------------------------------------------------------------------------------------
+import itertools
+
+import pytest
+
+_PERSONAS = {"ana.reviewer": "reviewer", "vic.viewer": "viewer", "nobody": "viewer", None: "viewer"}
+
+
+@pytest.mark.parametrize("environment,enabled,target,persona", list(itertools.product(("development", "staging", "production"), (0, 1), (False, True), _PERSONAS)))
+def test_matrix_environment_state_target_persona(client, conn, environment, enabled, target, persona):
+    row = conn.execute("SELECT id FROM feature_flags WHERE environment = ? AND enabled = ? ORDER BY id LIMIT 1", (environment, enabled)).fetchone()
+    assert row is not None, f"seed lacks a {environment} flag with enabled={enabled}"
+    flag_id = row[0]
+    before = dict(conn.execute("SELECT enabled, updated_at, updated_by FROM feature_flags WHERE id = ?", (flag_id,)).fetchone())
+    audits_before = conn.execute("SELECT COUNT(*) FROM feature_flag_audit_events WHERE flag_id = ?", (flag_id,)).fetchone()[0]
+    headers = {"X-Demo-User": persona} if persona else {}
+    r = client.post(f"{BASE}/flags/{flag_id}/toggle", json={"enabled": target}, headers=headers)
+
+    if _PERSONAS[persona] != "reviewer":
+        expected = (403, "forbidden")
+    elif environment == "production":
+        expected = (403, "environment_locked")
+    elif bool(enabled) == target:
+        expected = (409, "invalid_transition")
+    else:
+        expected = (200, None)
+    assert r.status_code == expected[0], (environment, enabled, target, persona, r.text)
+    after = dict(conn.execute("SELECT enabled, updated_at, updated_by FROM feature_flags WHERE id = ?", (flag_id,)).fetchone())
+    audits_after = conn.execute("SELECT COUNT(*) FROM feature_flag_audit_events WHERE flag_id = ?", (flag_id,)).fetchone()[0]
+    if expected[0] == 200:
+        assert after["enabled"] == int(target) and after["updated_by"] == "Ana Okafor" and audits_after == audits_before + 1
+    else:
+        assert r.json()["error"]["code"] == expected[1]
+        assert after == before and audits_after == audits_before
+
+
+@pytest.mark.parametrize(
+    "body,expected",
+    [({}, 422), ({"enabled": None}, 422), ({"reason": "r"}, 422), ({"enabled": True, "reason": None}, 422),
+     ({"enabled": True, "reason": "   "}, 200), ({"enabled": True, "reason": "x" * 500}, 200), ({"enabled": True, "reason": "x" * 501}, 422)],
+)
+def test_toggle_body_edge_cases(client, reviewer_headers, body, expected):
+    r = client.post(f"{BASE}/flags/{STAGING_OFF}/toggle", json=body, headers=reviewer_headers)
+    assert r.status_code == expected, (body, r.text)
+
+
+def test_flag_list_query_edge_cases(client):
+    total_all = client.get(f"{BASE}/flags").json()["total"]
+    assert client.get(f"{BASE}/flags", params={"q": "%"}).json()["total"] < total_all  # LIKE wildcard escaped
+    assert client.get(f"{BASE}/flags", params={"q": "x" * 5000}).status_code in (200, 422)
+    assert client.get(f"{BASE}/flags", params={"enabled": "yes"}).status_code == 422
+    assert client.get(f"{BASE}/flags", params={"environment": "Staging"}).status_code == 422

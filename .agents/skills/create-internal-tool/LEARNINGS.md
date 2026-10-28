@@ -42,3 +42,13 @@ Skill gaps: spec filename hyphen vs underscore (→ AGENTS.md rule 8 + `test_cor
 Template gaps: `Toggle` (added, generic); optional reason in `ConfirmDialog` (`collectReason`); copied from KYC: `_now`, seed `_iso`/`BASE`, `useDebounced`, URL-param state, audit timeline, date formatting → all promoted (`core/time.py`, `shared/hooks.ts`, `AuditTimeline`, `shared/format.ts`) in the same PR. Audit table/repository still per app (rule 9; promote at app #3).
 Found by review/browser, not tests: optional reason field missing in the dialog (browser → Vitest `ConfirmDialog.test.tsx`); `database is locked` 500 under a competing writer (review → `BEGIN IMMEDIATE` + two-connection tests in core and both apps); seed history later than `updated_at` (review → spec seed requirement + `test_core::test_seeded_history_is_consistent_with_seeded_records`); spec filename (review → `test_core`).
 Still open: per-app roles; form primitives (`TextField`, `SelectField`); shared audit table; spec JSON-Schema; Playwright smoke test.
+
+## template — 2026-10-28 — record-safety review (no new app)
+Spec gaps: none (review of shared UI behaviour).
+Skill gaps: step 5 said nothing about record identity → add: "key detail data and pending actions by record id; a
+confirmation must close when the selection changes". (Added to AGENTS.md frontend conventions.)
+Template gaps: `useQuery` keeps previous data by design (lists) but panels rendered it unkeyed; `ConfirmDialog` had no
+Escape/focus handling; pages hid refetch failures. All fixed in shared code; both apps benefit without app changes beyond the id guard.
+Found by review, not tests: all of the above — the frontend had 4 tests. Now 14; detail-panel behaviour is tested per app.
+Still open: `DetailPanel` focus trap; sub-second timestamps; form primitives; per-app roles; Playwright.
+

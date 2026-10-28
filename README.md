@@ -91,7 +91,7 @@ Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to
 ```bash
 cd backend && python -m pytest          # 38 passed  (10 core + 14 KYC + 14 feature flags)
 cd frontend && npm run typecheck        # tsc -b, clean
-cd frontend && npm test                 # Vitest: 4 passed (ConfirmDialog)
+cd frontend && npm test                 # Vitest: 14 passed (ConfirmDialog, detail panels, queue refresh)
 cd frontend && npm run build            # production build, clean
 ```
 

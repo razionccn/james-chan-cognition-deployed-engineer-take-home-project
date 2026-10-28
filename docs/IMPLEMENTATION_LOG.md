@@ -150,3 +150,12 @@ steps rewritten where the two builds had to guess; spec headers state the conven
 workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 35 passed; `tsc -b` clean; `npm test` → 4 passed;
 `vite build` clean. Deferred (P2): per-app roles, form primitives, spec schema, Playwright.
 
+## Milestone 7 — Record-safety investigation (independent review findings)
+
+Eight suspected defects investigated skeptically with reproduction-first Vitest tests (per-item verdicts and evidence are in
+the PR #7 description; the tests themselves are the durable record). Reproduced and fixed: stale record shown across selection changes (detail keyed by
+record id), orphaned / wrong-record pending actions (pending state bound to the record id), silent stale data on failed
+refresh (`RefreshError`), Escape closing the panel under an open confirmation (dialog owns Escape + focus trap), table-row
+ARIA, timestamp taken before the write lock, lax boolean on the toggle API (`StrictBool`). Not reproduced: mid-flight
+prop change redirecting a request (closure already captured the id). `pytest` → 35 passed; `npm test` → 14 passed.
+

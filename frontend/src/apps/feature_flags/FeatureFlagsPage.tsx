@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
 import { useDebounced, useUrlParam } from '@/shared/hooks'
-import { Button, DataTable, ErrorState, FilterBar, PageHeader, SearchInput, SelectFilter, type Column } from '@/shared/components'
+import { Button, DataTable, ErrorState, FilterBar, PageHeader, RefreshError, SearchInput, SelectFilter, type Column } from '@/shared/components'
 import { formatDateTime } from '@/shared/format'
 import { featureFlagsApi } from './api'
 import { FlagDetailPanel } from './FlagDetailPanel'
@@ -63,6 +63,7 @@ export function FeatureFlagsPage() {
         )}
       </FilterBar>
 
+      {query.status === 'error' && query.data && <RefreshError message={query.error.message} onRetry={query.refetch} />}
       {query.status === 'error' && !query.data ? (
         <ErrorState message={query.error.message} onRetry={query.refetch} />
       ) : (

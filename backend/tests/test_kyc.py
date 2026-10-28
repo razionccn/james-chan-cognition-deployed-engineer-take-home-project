@@ -215,3 +215,78 @@ def test_competing_writer_on_a_second_connection_gets_409_not_500(client, conn, 
     assert r.status_code == 409, r.text  # type: ignore[union-attr]
     assert conn.execute("SELECT status FROM kyc_cases WHERE id = ?", (PENDING,)).fetchone()[0] == "approved"
     assert conn.execute("SELECT COUNT(*) FROM kyc_audit_events WHERE case_id = ?", (PENDING,)).fetchone()[0] == 0
+
+
+# ---------------------------------------------------------------------------------------------
+# Exhaustive rule matrix: every seeded status × every action × every persona must yield exactly
+# the code the spec promises, and nothing may change unless the code is 200.
+# ---------------------------------------------------------------------------------------------
+import itertools
+
+import pytest
+
+from app.apps.kyc.rules import ACTIONS, STATUSES, next_status
+
+_PERSONAS = {"ana.reviewer": "reviewer", "ben.reviewer": "reviewer", "vic.viewer": "viewer", "nobody": "viewer", None: "viewer"}
+
+
+@pytest.mark.parametrize("status,action,persona", list(itertools.product(STATUSES, ACTIONS, _PERSONAS)))
+def test_matrix_status_action_persona(client, conn, status, action, persona):
+    case_id = conn.execute("SELECT id FROM kyc_cases WHERE status = ? ORDER BY id LIMIT 1", (status,)).fetchone()[0]
+    before = dict(conn.execute("SELECT status, updated_at FROM kyc_cases WHERE id = ?", (case_id,)).fetchone())
+    audits_before = conn.execute("SELECT COUNT(*) FROM kyc_audit_events WHERE case_id = ?", (case_id,)).fetchone()[0]
+    headers = {"X-Demo-User": persona} if persona else {}
+    r = client.post(f"/api/kyc/cases/{case_id}/actions", json={"action": action, "reason": "matrix"}, headers=headers)
+
+    if _PERSONAS[persona] != "reviewer":
+        expected = (403, "forbidden")
+    elif next_status(action, status) is None:
+        expected = (409, "invalid_transition")
+    else:
+        expected = (200, None)
+    assert r.status_code == expected[0], (status, action, persona, r.text)
+    after = dict(conn.execute("SELECT status, updated_at FROM kyc_cases WHERE id = ?", (case_id,)).fetchone())
+    audits_after = conn.execute("SELECT COUNT(*) FROM kyc_audit_events WHERE case_id = ?", (case_id,)).fetchone()[0]
+    if expected[0] == 200:
+        assert after["status"] == next_status(action, status) and audits_after == audits_before + 1
+    else:
+        assert r.json()["error"]["code"] == expected[1]
+        assert after == before and audits_after == audits_before
+
+
+@pytest.mark.parametrize(
+    "body,expected",
+    [
+        ({"action": "approve"}, 422),                       # reason missing
+        ({"action": "approve", "reason": None}, 422),
+        ({"action": "approve", "reason": "x" * 2001}, 422),  # over max_length=2000
+        ({"action": "approve", "reason": "x" * 2000}, 200),
+        ({"action": "APPROVE", "reason": "r"}, 422),        # enums are case-sensitive
+        ({"action": "", "reason": "r"}, 422),
+        ({"reason": "r"}, 422),
+        ({}, 422),
+    ],
+)
+def test_kyc_body_edge_cases(client, reviewer_headers, body, expected):
+    r = client.post(f"/api/kyc/cases/{PENDING}/actions", json=body, headers=reviewer_headers)
+    assert r.status_code == expected, (body, r.text)
+    if expected != 200:
+        assert r.json()["error"]["code"] in ("validation_error",)
+
+
+@pytest.mark.parametrize("bad_id", [" ", "KYC-1001'; DROP TABLE kyc_cases;--", "KYC-1001%00", "../../etc", "x" * 2000])
+def test_kyc_unknown_or_hostile_ids(client, conn, reviewer_headers, bad_id):
+    r = client.get(f"/api/kyc/cases/{bad_id}")
+    assert r.status_code in (404, 405, 422), r.text
+    r = client.post(f"/api/kyc/cases/{bad_id}/actions", json={"action": "approve", "reason": "r"}, headers=reviewer_headers)
+    assert r.status_code in (404, 405, 422), r.text
+    assert conn.execute("SELECT COUNT(*) FROM kyc_cases").fetchone()[0] == 24
+
+
+def test_kyc_list_query_edge_cases(client):
+    assert client.get("/api/kyc/cases", params={"q": "x" * 5000}).status_code in (200, 422)
+    total_all = client.get("/api/kyc/cases").json()["total"]
+    assert client.get("/api/kyc/cases", params={"q": "%"}).json()["total"] < total_all
+    assert client.get("/api/kyc/cases", params={"q": "_"}).json()["total"] < total_all  # "_" is literal, not single-char wildcard
+    assert client.get("/api/kyc/cases", params={"status": "PENDING"}).status_code == 422
+    assert client.get("/api/kyc/cases", params={"risk_level": "critical"}).status_code == 422

@@ -77,7 +77,6 @@ export function DataTable<Row>({
                       : undefined
                   }
                   tabIndex={onRowClick ? 0 : undefined}
-                  role={onRowClick ? 'button' : undefined}
                   className={cx(
                     onRowClick &&
                       'cursor-pointer hover:bg-blue-50/60 focus:outline-none focus-visible:bg-blue-50/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500',

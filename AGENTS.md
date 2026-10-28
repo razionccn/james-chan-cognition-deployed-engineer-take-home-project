@@ -93,6 +93,10 @@ real policy; the `require_role()` seam is where that plugs in.
 - Every list view has loading, empty and error states. Every consequential action goes
   through `ConfirmDialog` and shows a `useToast()` success message.
 - Keep the backend's error `message` visible to the user on failure.
+- Record identity: a detail panel renders only data whose `id` equals the selected id; a pending
+  consequential action is stored with the record id it was started on, is cancelled when the
+  selection changes or the panel closes, and the request uses that stored id. Show `RefreshError`
+  when a refetch fails while older data is still on screen.
 
 ## Running and testing
 
