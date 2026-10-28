@@ -1,3 +1,4 @@
+import { KycQueuePage } from './kyc/KycQueuePage'
 import type { ComponentType } from 'react'
 
 /**
@@ -15,4 +16,12 @@ export interface AppDefinition {
   Page: ComponentType
 }
 
-export const appRegistry: AppDefinition[] = []
+export const appRegistry: AppDefinition[] = [
+  {
+    id: 'kyc',
+    name: 'KYC Review Queue',
+    description: 'Review identity-verification cases: approve, reject or escalate with an audited reason.',
+    path: '/kyc',
+    Page: KycQueuePage,
+  },
+]
