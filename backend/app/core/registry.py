@@ -16,4 +16,6 @@ from types import ModuleType
 
 
 def installed_apps() -> list[ModuleType]:
-    return []
+    from app.apps import kyc
+
+    return [kyc]
