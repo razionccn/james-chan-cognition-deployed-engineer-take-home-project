@@ -65,7 +65,9 @@ Create `frontend/src/apps/<app_id>/` with `types.ts`, `api.ts` (typed calls via 
 `labels.tsx`, page components, and register the app in `frontend/src/apps/registry.ts`.
 - List page: `FilterBar` + `SearchInput` (debounce with `useDebounced`) + `SelectFilter`s,
   `DataTable`, selected record kept in the URL with `useUrlParam('<thing>')`.
-- Detail: `DetailPanel` + `DescriptionList` + `Section`s; history via `AuditTimeline`.
+- Detail: `DetailPanel` + `DescriptionList` + `Section`s; history via `AuditTimeline`. Follow the
+  record-identity convention in `AGENTS.md` (detail keyed by id, pending action bound to its record,
+  `RefreshError` on a failed refetch) — the panel tests in `apps/*/__tests__/` show the pattern.
 - Cover loading, empty and error states; confirm consequential actions with `ConfirmDialog`
   (`requireReason` or `collectReason`); show backend error messages verbatim; toast on success.
 

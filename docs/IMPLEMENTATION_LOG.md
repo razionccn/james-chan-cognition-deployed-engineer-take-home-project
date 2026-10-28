@@ -150,12 +150,23 @@ steps rewritten where the two builds had to guess; spec headers state the conven
 workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 35 passed; `tsc -b` clean; `npm test` → 4 passed;
 `vite build` clean. Deferred (P2): per-app roles, form primitives, spec schema, Playwright.
 
-## Milestone 7 — Record-safety investigation (independent review findings)
+## Milestone 7 — Record-safety investigation (independent review findings, PR #7)
 
 Eight suspected defects investigated skeptically with reproduction-first Vitest tests (per-item verdicts and evidence are in
 the PR #7 description; the tests themselves are the durable record). Reproduced and fixed: stale record shown across selection changes (detail keyed by
 record id), orphaned / wrong-record pending actions (pending state bound to the record id), silent stale data on failed
 refresh (`RefreshError`), Escape closing the panel under an open confirmation (dialog owns Escape + focus trap), table-row
 ARIA, timestamp taken before the write lock, lax boolean on the toggle API (`StrictBool`). Not reproduced: mid-flight
-prop change redirecting a request (closure already captured the id). `pytest` → 35 passed; `npm test` → 14 passed.
+prop change redirecting a request (closure already captured the id). The recorded browser run then caught focus not returning to
+the opener after Escape (fixed twice: effect deps, then capturing the opener before autofocus). Exhaustive rule-matrix tests
+(KYC status × action × persona = 60; flags environment × state × target × persona = 48) plus body/id/query edge cases found
+one more real bug — `q=%` matched every record (LIKE wildcards now escaped in both repositories). `pytest` → 168 passed;
+`npm test` → 14 passed; browser walkthrough of both apps PASS (recorded).
+
+## Milestone 8 — Spec authoring kit (PR #6)
+
+`specs/TEMPLATE.yaml` (every section pre-filled and commented, both domain-rule shapes, `# source:` / `# calls:` annotations
+to pin a UI element to an endpoint) and `specs/README.md` (field-by-field guide, default element → endpoint mapping the Skill
+applies when a spec does not pin one). `test_core` parses every `specs/*.yaml` including the template. Skill step 1, README §6
+and AGENTS.md point at the kit.
 
