@@ -234,6 +234,7 @@ export default function App() {
           error={detailError}
           persona={persona}
           canToggleRole={canToggleRole}
+          dialogOpen={dialogNext !== null}
           onClose={closePanel}
           onRetry={() => setDetailVersion((v) => v + 1)}
           onRequestToggle={(next) => {

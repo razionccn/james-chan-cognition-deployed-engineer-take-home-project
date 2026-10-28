@@ -10,19 +10,21 @@ interface Props {
   error: string | null
   persona: Persona
   canToggleRole: boolean
+  dialogOpen: boolean
   onClose: () => void
   onRetry: () => void
   onRequestToggle: (nextEnabled: boolean) => void
 }
 
-export function FlagDetailPanel({ flagId, flag, loading, error, persona, canToggleRole, onClose, onRetry, onRequestToggle }: Props) {
+export function FlagDetailPanel({ flagId, flag, loading, error, persona, canToggleRole, dialogOpen, onClose, onRetry, onRequestToggle }: Props) {
   useEffect(() => {
+    if (dialogOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, dialogOpen])
 
   const canToggle = !!flag && flag.editable && canToggleRole
 
