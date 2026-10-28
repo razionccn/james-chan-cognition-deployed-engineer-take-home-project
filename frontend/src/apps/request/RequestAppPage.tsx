@@ -189,7 +189,10 @@ function localChecks(d: Draft, step: number): string[] {
     if (d.category === 'review_queue') {
       if (stateOptions(d).length < 2) problems.push('The status field needs at least two values.')
       if (!d.initialState) problems.push('Pick the starting status.')
-      if (d.actions.filter((a) => a.id.trim()).length === 0) problems.push('Add at least one action.')
+      const actions = d.actions.filter((a) => a.id.trim())
+      if (actions.length === 0) problems.push('Add at least one action.')
+      if (actions.some((a) => a.from.length === 0)) problems.push('Each action needs at least one "Allowed from" status.')
+      if (actions.some((a) => !a.to)) problems.push('Each action needs a "Moves to" status.')
     }
     if (d.category !== 'review_queue' && !d.fields.some((f) => f.editable)) problems.push('Mark at least one field as editable for this app type.')
   }
