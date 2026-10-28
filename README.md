@@ -137,6 +137,10 @@ walkthrough and metrics are in `docs/FEATURE_FLAG_BUILD_METRICS.md` §E.
    `frontend/src/apps/<app_id>/`, registers both, writes `tests/test_<app_id>.py` (one per acceptance
    criterion), runs everything, fixes failures, and records the result in `docs/IMPLEMENTATION_LOG.md`.
 4. Review the PR. The spec + tests make "did it build what we asked" a checklist rather than a judgement call.
+5. The Skill's last step is a retrospective: the build appends what the spec, Skill or template lacked to
+   `.agents/skills/create-internal-tool/LEARNINGS.md` and applies its promotion rules in the same PR
+   (guessed twice → rule; copied twice → shared code; caught by review/browser → test). The template is
+   expected to improve with every tool built on it; the two entries so far show the loop working.
 
 This was exercised for real with the Feature-Flag Admin Panel, built in a fresh Devin session that had only
 this repository as context: 570 application-specific source lines, 49 lines of shared-template change

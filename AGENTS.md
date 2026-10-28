@@ -142,3 +142,5 @@ All four run in CI (`.github/workflows/ci.yml`) on every pull request.
 - Enforces its business rules and roles in the backend, with an audit table for writes.
 - Ships deterministic seed data and acceptance tests before UI polish.
 - Documents assumptions, test results and limitations in `docs/IMPLEMENTATION_LOG.md`.
+- Ends with a retrospective entry in `.agents/skills/create-internal-tool/LEARNINGS.md` and applies
+  its promotion rules (Skill step 10) so the next tool starts from a better template.

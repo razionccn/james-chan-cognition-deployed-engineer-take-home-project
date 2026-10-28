@@ -6,7 +6,9 @@ description: Build a new internal application for the Fintech Operations Console
 # Create an internal tool from a specification
 
 This is a repeatable engineering procedure, not a code generator. Follow the
-steps in order; do not skip the inspection or verification steps.
+steps in order; do not skip the inspection, verification or retrospective steps.
+Before step 1, read `LEARNINGS.md` (next to this file): its "Still open" lines are the
+known gaps you are most likely to hit.
 
 ## 1. Read the specification
 - Open `specs/<app_id>.yaml`. The filename **is** `app.id` (snake_case; AGENTS.md rule 8).
@@ -91,3 +93,11 @@ Append to `docs/IMPLEMENTATION_LOG.md`: what was built, which shared components 
 assumptions made, tests executed with actual results, known limitations, and the two numbers the
 template exists to improve: elapsed time (first command → PR) and lines changed in `shared/`
 + `core/` versus in the app module (`git diff --stat`). Open a PR whose description links to the spec.
+
+## 10. Retrospective — make the template better than you found it
+Append an entry to `.agents/skills/create-internal-tool/LEARNINGS.md` using its template, then
+apply its promotion rules **in the same PR**: anything guessed for the second time becomes a rule
+in `AGENTS.md` or this Skill; anything copied from an existing app for the second time is promoted
+to `core/` or `shared/` and both apps use it; anything a review or browser run caught that the
+tests did not gets a regression test. Keep this file short — point at code rather than add prose.
+The PR description links the LEARNINGS entry.
