@@ -1,4 +1,4 @@
-"""Acceptance tests for specs/feature-flags.yaml (AC-1 .. AC-9). All go through HTTP + real SQLite."""
+"""Acceptance tests for specs/feature_flags.yaml (AC-1 .. AC-9). All go through HTTP + real SQLite."""
 from app.core import db as db_module
 from app.main import create_app
 from fastapi.testclient import TestClient

@@ -1,4 +1,4 @@
-"""Business rules for feature-flag changes (BR-1..BR-7 in specs/feature-flags.yaml)."""
+"""Business rules for feature-flag changes (BR-1..BR-7 in specs/feature_flags.yaml)."""
 from __future__ import annotations
 
 import sqlite3

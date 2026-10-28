@@ -1,4 +1,4 @@
-"""Environment rules for feature flags. Mirrors specs/feature-flags.yaml `environments`."""
+"""Environment rules for feature flags. Mirrors specs/feature_flags.yaml `environments`."""
 from typing import Literal
 
 Environment = Literal["development", "staging", "production"]
