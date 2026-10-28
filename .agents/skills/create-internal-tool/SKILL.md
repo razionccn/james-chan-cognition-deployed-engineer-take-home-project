@@ -13,11 +13,15 @@ known gaps you are most likely to hit.
 ## 1. Read the specification
 - Open `specs/<app_id>.yaml`. The filename **is** `app.id` (snake_case; AGENTS.md rule 8).
   Check it parses: `python -c "import sys, yaml; yaml.safe_load(open(sys.argv[1]))" specs/<app_id>.yaml`.
-- Mandatory sections: app, roles, data_model, business_rules (each with `on_violation`), api,
-  pages, seed_data, acceptance_criteria, non_goals. Domain sections vary: a state machine has
+- The spec format is documented field by field in `specs/README.md`; new specs start from
+  `specs/TEMPLATE.yaml`. Mandatory sections: app, roles, data_model, business_rules (each with
+  `on_violation`), api, pages, seed_data, acceptance_criteria, non_goals. Domain sections vary: a state machine has
   `workflow`, an environment-scoped tool has `environments`; follow `specs/kyc.yaml` and
   `specs/feature_flags.yaml` for the shape.
 - Note every business rule's `on_violation` status/code — the backend must return exactly those.
+- UI ↔ API binding: honour an explicit `source:` / `calls:` on a page element; otherwise apply the
+  default mapping table in `specs/README.md` (list → `GET /<entities>`, detail → `GET /<entities>/{id}`,
+  action → `POST /<entities>/{id}/<action>`, options → `GET /meta`).
 - `roles` refer to the global persona roles in `backend/app/core/personas.py`; there are no
   per-app roles yet. If the spec needs one, record the mapping as an assumption.
 - If something essential is missing, make a sensible decision, write it down in

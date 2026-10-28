@@ -15,7 +15,7 @@ app:
   console: Fintech Operations Console
   purpose: >
     <2–3 sentences: who uses it, what they look at, what they can change, what is recorded.>
-  data_policy: Synthetic records only. <What must never appear: real customers, documents, secrets…>
+  data_policy: "Synthetic records only. <What must never appear, e.g. real customers, documents, secrets>"
 
 roles:
   - id: reviewer                        # the only write role that exists today

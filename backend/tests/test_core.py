@@ -83,3 +83,13 @@ def test_seeded_history_is_consistent_with_seeded_records(conn, module):
         ).fetchall()
         assert conn.execute(f"SELECT COUNT(*) FROM {audit_table}").fetchone()[0] > 0
         assert [tuple(r) for r in mismatches] == [], f"{module.APP_ID}: seeded updated_at disagrees with newest audit event"
+
+
+@pytest.mark.parametrize("path", sorted(SPECS_DIR.glob("*.yaml")), ids=lambda p: p.name)
+def test_every_spec_file_parses_with_the_core_sections(path):
+    """Includes specs/TEMPLATE.yaml, so a broken template is caught before someone copies it."""
+    spec = yaml.safe_load(path.read_text())
+    for section in ("app", "roles", "data_model", "business_rules", "api", "pages", "seed_data", "acceptance_criteria", "non_goals"):
+        assert section in spec, f"{path.name} lacks section '{section}'"
+    for rule in spec["business_rules"]:
+        assert rule.get("id", "").startswith("BR-") and rule.get("rule"), f"{path.name}: every business rule needs id BR-n and rule text"
