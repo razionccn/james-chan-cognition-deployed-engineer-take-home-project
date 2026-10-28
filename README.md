@@ -1,17 +1,17 @@
-# Fintech Operations Console — Devin Golden Path + KYC Review Queue
+# Fintech Operations Console — Internal Tool Development Template + KYC Review Queue
 
 Proof of concept for a Cognition Deployed Engineer case study: a repeatable
-"Golden Path" for building internal business tools with Devin, and a working
-KYC review application built by following it.
+**Internal Tool Development Template** (the "Golden Path" in the case brief) for building
+internal business tools with Devin, and a working KYC review application built by following it.
 
-> Status: **Golden Path foundation** (this PR). The KYC application follows in PR #2
+> Status: **Internal Tool Development Template foundation** (this PR). The KYC application follows in PR #2
 > and this README will be expanded with full run/test/limitations/evidence sections.
 
-## Golden Path in one glance
+## Internal Tool Development Template in one glance
 
 | Piece | Where |
 |---|---|
-| Structured app specification | `specs/kyc-review.yaml` |
+| Structured app specification | `specs/kyc.yaml` |
 | Repository instructions & conventions | `AGENTS.md` |
 | Repeatable Devin procedure | `.agents/skills/create-internal-tool/SKILL.md` |
 | Shared backend foundation | `backend/app/core/` |

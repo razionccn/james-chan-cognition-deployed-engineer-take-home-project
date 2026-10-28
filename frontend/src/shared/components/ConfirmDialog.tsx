@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button, type ButtonProps } from './Button'
 
 /**
@@ -31,6 +31,9 @@ export function ConfirmDialog({
   onConfirm: (reason: string) => void
 }) {
   const [reason, setReason] = useState('')
+  useEffect(() => {
+    if (open) setReason('')
+  }, [open])
   if (!open) return null
   const reasonMissing = requireReason && reason.trim().length === 0
 
