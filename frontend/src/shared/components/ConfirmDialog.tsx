@@ -41,6 +41,9 @@ export function ConfirmDialog({
   const [reason, setReason] = useState('')
   const panelRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
+  const wasOpen = useRef(false)
+  if (open && !wasOpen.current) openerRef.current = document.activeElement as HTMLElement | null // before autofocus/commit
+  wasOpen.current = open
   const latest = useRef({ busy, onCancel })
   latest.current = { busy, onCancel }
   useEffect(() => {
@@ -48,7 +51,6 @@ export function ConfirmDialog({
   }, [open])
   useEffect(() => {
     if (!open) return
-    openerRef.current = document.activeElement as HTMLElement | null
     const panel = panelRef.current
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE)
     if (first && !panel?.contains(document.activeElement)) first.focus()
@@ -103,7 +105,6 @@ export function ConfirmDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
-              autoFocus
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-normal shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Explain the decision for the audit trail…"
             />
