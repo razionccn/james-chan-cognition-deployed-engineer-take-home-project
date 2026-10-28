@@ -3,12 +3,12 @@
 Concise record of what was built, in order, so the work can be shown accurately.
 Times are approximate wall-clock from the start of the session.
 
-## Milestone 1 — Golden Path foundation (PR #1)
+## Milestone 1 — Internal Tool Development Template foundation (PR #1)
 
 **Goal:** establish the minimum reusable foundation before writing any KYC-specific code.
 
 Delivered:
-- `specs/kyc-review.yaml` — structured requirements: roles, data model, workflow transitions,
+- `specs/kyc.yaml` — structured requirements: roles, data model, workflow transitions,
   business rules (with required HTTP status/code per violation), API, pages, seed data,
   10 acceptance criteria, non-goals.
 - `AGENTS.md` — architecture, layering rules, error/audit/authorization conventions, run & test commands.

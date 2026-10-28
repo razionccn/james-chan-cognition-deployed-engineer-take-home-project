@@ -18,9 +18,9 @@ roles:
     description: Can view all cases and perform review actions.
   - id: viewer
     description: Read-only. Can view cases and history but cannot modify anything.
-  note: >
-    Roles come from the DEV-ONLY simulated persona header (X-Demo-User). This is
-    not authentication. See AGENTS.md "Authorization".
+roles_note: >
+  Roles come from the DEV-ONLY simulated persona header (X-Demo-User). This is
+  not authentication. See AGENTS.md "Authorization".
 
 data_model:
   kyc_cases:
@@ -89,7 +89,7 @@ api:
       response: KycCaseDetail   # summary fields + findings + audit_events (newest first)
     - method: POST
       path: /cases/{case_id}/actions
-      body: { action: enum [approve, reject, escalate], reason: string }
+      body: { action: "enum [approve, reject, escalate]", reason: string }
       auth: role reviewer
       response: KycCaseDetail (updated)
       errors: [404 not_found, 403 forbidden, 409 invalid_transition, 422 validation_error]
@@ -162,7 +162,8 @@ acceptance_criteria:
     given: escalated case, reviewer persona
     when: POST approve or reject
     then: 200 and the terminal status is set
-  - id: AC-10 (browser)
+  - id: AC-10
+    kind: browser
     then: queue loads, filters work, detail opens, approve-with-reason persists across refresh, audit entry shown, viewer sees no action buttons and backend rejects a forced request.
 
 non_goals:

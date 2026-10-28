@@ -110,7 +110,7 @@ cd frontend && npm run typecheck      # tsc -b
 
 ## Requirements for every new internal tool
 
-- Starts from a spec in `specs/<app_id>.yaml` with the same sections as `kyc-review.yaml`.
+- Starts from a spec in `specs/<app_id>.yaml` with the same sections as `kyc.yaml`.
 - Follows the module layout above and registers itself in both registries.
 - Enforces its business rules and roles in the backend, with an audit table for writes.
 - Ships deterministic seed data and acceptance tests before UI polish.
