@@ -1,3 +1,5 @@
+// Wire types for the KYC Review Queue; mirror backend/app/apps/kyc/schemas.py.
+
 export type KycStatus = 'pending' | 'approved' | 'rejected' | 'escalated'
 export type RiskLevel = 'low' | 'medium' | 'high'
 export type ReviewAction = 'approve' | 'reject' | 'escalate'

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from './Button'
 
+/** Spinner placeholder while a query is in flight. */
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 p-10 text-sm text-slate-500" role="status">
@@ -10,6 +11,7 @@ export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   )
 }
 
+/** Friendly empty result, optionally with a call-to-action. */
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
@@ -20,6 +22,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
   )
 }
 
+/** Failed query: shows the backend's message verbatim and an optional retry. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-red-200 bg-red-50 p-8 text-center" role="alert">

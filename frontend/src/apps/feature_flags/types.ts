@@ -1,3 +1,5 @@
+// Wire types for the Feature-Flag Admin Panel; mirror backend/app/apps/feature_flags/schemas.py.
+
 export type Environment = 'development' | 'staging' | 'production'
 export type FlagAction = 'enable' | 'disable'
 

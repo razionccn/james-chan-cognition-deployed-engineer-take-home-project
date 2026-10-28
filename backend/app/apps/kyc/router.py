@@ -1,3 +1,4 @@
+"""HTTP layer for the KYC Review Queue (/api/kyc). Parses input, calls service, maps output; no rules here."""
 from __future__ import annotations
 
 import sqlite3

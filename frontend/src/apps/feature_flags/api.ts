@@ -1,3 +1,4 @@
+// Typed calls to /api/feature_flags; the only place this app touches the network.
 import { api, buildQuery } from '@/shared/api/client'
 import type { FeatureFlagDetail, FlagFilters, FlagListResponse } from './types'
 

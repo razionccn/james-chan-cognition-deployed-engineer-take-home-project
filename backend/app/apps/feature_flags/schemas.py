@@ -1,3 +1,4 @@
+"""Pydantic request/response models for the feature-flag API (the wire format the frontend types mirror)."""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

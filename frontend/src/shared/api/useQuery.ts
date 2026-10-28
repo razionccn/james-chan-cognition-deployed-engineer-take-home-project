@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError } from './client'
 
+/** `data` is kept during refetch so lists do not flash empty. */
 export type QueryState<T> =
   | { status: 'loading'; data?: T }
   | { status: 'error'; error: ApiError; data?: T }

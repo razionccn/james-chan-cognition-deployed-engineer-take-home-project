@@ -1,3 +1,4 @@
+// Presentation maps for the Feature-Flag Admin Panel: domain value → badge tone / human label / filter options.
 import { StatusBadge, type BadgeTone } from '@/shared/components'
 import type { Environment } from './types'
 

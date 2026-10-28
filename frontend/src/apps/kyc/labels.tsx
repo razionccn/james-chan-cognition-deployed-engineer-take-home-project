@@ -1,3 +1,4 @@
+// Presentation maps for the KYC Review Queue: domain value → badge tone / human label / filter options.
 import { StatusBadge, type BadgeTone } from '@/shared/components'
 import type { KycStatus, ReviewAction, RiskLevel } from './types'
 

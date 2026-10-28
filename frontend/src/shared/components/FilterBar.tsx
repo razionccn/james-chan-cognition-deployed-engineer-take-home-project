@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+/** Option for SelectFilter; `value` is what the API receives. */
 export interface SelectOption {
   value: string
   label: string
@@ -10,6 +11,7 @@ export function FilterBar({ children }: { children: ReactNode }) {
   return <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">{children}</div>
 }
 
+/** Controlled search box. Debounce in the page with `useDebounced` before querying. */
 export function SearchInput({
   value,
   onChange,
@@ -35,6 +37,7 @@ export function SearchInput({
   )
 }
 
+/** Controlled single-select filter with an "All" option (empty string = no filter). */
 export function SelectFilter({
   label,
   value,

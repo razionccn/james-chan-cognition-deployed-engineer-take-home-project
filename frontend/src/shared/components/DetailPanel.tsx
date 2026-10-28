@@ -53,6 +53,7 @@ export function DetailPanel({
 }
 
 /** Label/value grid used inside detail panels. */
+/** Label/value grid for a record's summary fields. */
 export function DescriptionList({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -66,6 +67,7 @@ export function DescriptionList({ items }: { items: Array<{ label: string; value
   )
 }
 
+/** Titled block inside a DetailPanel body. */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-6">

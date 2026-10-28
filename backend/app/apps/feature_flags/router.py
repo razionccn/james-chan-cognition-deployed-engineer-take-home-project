@@ -1,3 +1,4 @@
+"""HTTP layer for the Feature-Flag Admin Panel (/api/feature_flags). Parses input, calls service, maps output."""
 from __future__ import annotations
 
 import sqlite3

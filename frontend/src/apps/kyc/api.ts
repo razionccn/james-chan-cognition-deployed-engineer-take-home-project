@@ -1,3 +1,4 @@
+// Typed calls to /api/kyc; the only place this app touches the network.
 import { api, buildQuery } from '@/shared/api/client'
 import type { CaseFilters, CaseListResponse, KycCaseDetail, ReviewAction } from './types'
 

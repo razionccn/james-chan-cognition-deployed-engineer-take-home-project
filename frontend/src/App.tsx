@@ -1,3 +1,4 @@
+// Root router: the AppShell wraps the home page and every app registered in apps/registry.ts.
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { appRegistry } from '@/apps/registry'
 import { HomePage } from '@/apps/home/HomePage'

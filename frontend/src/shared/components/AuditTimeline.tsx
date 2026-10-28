@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { formatDateTime } from '@/shared/format'
 
+/** One row of history; apps map their audit_events to this shape. */
 export interface AuditTimelineEntry {
   id: string | number
   /** e.g. "Approved by Ana Okafor" */

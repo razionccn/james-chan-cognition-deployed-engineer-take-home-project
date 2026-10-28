@@ -11,6 +11,7 @@ const variants: Record<Variant, string> = {
   ghost: 'text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400',
 }
 
+/** Standard button; `loading` disables it and shows a spinner. */
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: 'sm' | 'md'

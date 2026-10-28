@@ -1,3 +1,4 @@
+// KYC Review Queue list page: debounced search + filters, DataTable, selected case kept in `?case=`.
 import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
 import { useDebounced, useUrlParam } from '@/shared/hooks'

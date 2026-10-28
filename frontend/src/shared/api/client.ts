@@ -26,6 +26,7 @@ export function setPersonaProvider(fn: () => string | null) {
   personaProvider = fn
 }
 
+/** `{ q: 'x', status: '' }` → `?q=x` (empty/undefined/null are dropped). */
 export function buildQuery(params: Record<string, string | number | undefined | null>): string {
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) {
@@ -71,6 +72,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return (await res.json()) as T
 }
 
+/** The two verbs the console uses; add put/patch/delete here when an app needs them. */
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),

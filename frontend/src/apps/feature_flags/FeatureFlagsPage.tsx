@@ -1,3 +1,4 @@
+// Feature-flag list page: debounced search + environment/state filters, selected flag kept in `?flag=`.
 import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
 import { useDebounced, useUrlParam } from '@/shared/hooks'
