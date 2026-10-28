@@ -1,0 +1,125 @@
+# Application specification — Feature-Flag Admin Panel (spec_version 1)
+# Produced with the "Request New App" wizard (frontend/src/apps/request) and validated by
+# `python -m app.cli validate-spec specs/feature_flags.yaml`.
+# STATUS: specification only — this app has NOT been implemented yet. Implementing it is the next
+# step of the workflow: an engineer reviews this file, then asks Devin to run the create-internal-tool Skill.
+spec_version: 1
+app:
+  id: feature_flags
+  name: Feature-Flag Admin Panel
+  category: admin_panel
+  purpose: Let platform engineers see every feature flag per environment and toggle staging flags with
+    an audited reason.
+  users:
+  - Platform engineers
+  - On-call engineers (read-only)
+roles:
+- id: flag_admin
+  description: Can toggle staging flags
+  can:
+  - view
+  - edit
+- id: viewer
+  description: Read-only
+  can:
+  - view
+entities:
+- id: feature_flag
+  name: Feature flag
+  id_field: key
+  fields:
+  - name: key
+    type: string
+    required: true
+    searchable: true
+    filterable: false
+  - name: description
+    type: text
+    required: false
+    searchable: false
+    filterable: false
+  - name: environment
+    type: enum
+    required: true
+    options:
+    - staging
+    - production
+    searchable: false
+    filterable: true
+  - name: enabled
+    type: boolean
+    required: true
+    searchable: false
+    filterable: true
+  - name: owner_team
+    type: string
+    required: false
+    searchable: false
+    filterable: false
+  - name: updated_at
+    type: datetime
+    required: true
+    searchable: false
+    filterable: false
+views:
+  list:
+    entity: feature_flag
+    columns:
+    - key
+    - environment
+    - enabled
+    - owner_team
+    - updated_at
+    search_fields:
+    - key
+    filters:
+    - environment
+    - enabled
+  detail:
+    entity: feature_flag
+    sections:
+    - title: Flag
+      fields:
+      - description
+      - owner_team
+      - environment
+      - enabled
+      source: fields
+    - title: Change history
+      fields: []
+      source: audit
+forms:
+- id: toggle_flag
+  entity: feature_flag
+  label: Update flag
+  mode: edit
+  fields:
+  - enabled
+  - description
+  roles:
+  - flag_admin
+  requires_reason: true
+  confirm: true
+audit:
+  enabled: true
+  record:
+  - actor
+  - previous_value
+  - new_value
+  - reason
+  - timestamp
+acceptance_criteria:
+- id: AC-1
+  when: GET /api/feature_flags/flags?environment=staging
+  then: only staging flags are returned
+  kind: api
+- id: AC-2
+  given: flag_admin persona
+  when: PATCH a staging flag enabled=true with a reason
+  then: 200, persisted, one audit event
+  kind: api
+- id: AC-3
+  given: viewer persona
+  when: PATCH any flag
+  then: 403 forbidden
+  kind: api

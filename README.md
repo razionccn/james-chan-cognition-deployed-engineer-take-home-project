@@ -24,16 +24,37 @@ structured spec by following a written procedure** — not by free-form promptin
 - The **template** is what makes tool #2..#13 cheap: the spec format, the repository rules, the
   Devin Skill, and the shared components/services the KYC app reuses.
 
-## 2. How Devin was used
+## 2. Two ways to create an app, one specification
 
-1. The brief was turned into a structured spec, `specs/kyc.yaml` (roles, data model, workflow,
-   business rules with the exact HTTP error each violation must return, API, pages, acceptance criteria).
-2. Devin established the template first — [PR #1](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/1):
-   `AGENTS.md`, `.agents/skills/create-internal-tool/SKILL.md`, shared backend core and frontend shell/components. No KYC code.
-3. Devin then followed the Skill against the spec to produce the KYC app — [PR #2](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/2):
-   backend module, frontend module, one pytest per acceptance criterion.
-4. Devin Review ran on the PRs; its findings (a YAML syntax error in the spec, a stale-reason bug in
-   `ConfirmDialog`, keyboard accessibility of table rows) were fixed in-session. See `docs/IMPLEMENTATION_LOG.md`.
+Both paths produce or consume the same `spec_version: 1` document (schema: `backend/app/core/spec.py`),
+validated by the same code via CLI, API or the wizard.
+
+**Engineers** — write or edit `specs/<app_id>.yaml` (reference: `specs/kyc.yaml`), run
+`python -m app.cli validate-spec specs/<app_id>.yaml`, commit it, and ask Devin:
+*"Use the `create-internal-tool` skill to implement `specs/<app_id>.yaml`."* Devin follows
+`.agents/skills/create-internal-tool/SKILL.md`, reuses the template, writes one test per acceptance
+criterion, and opens a PR you review like any other.
+
+**Non-engineers** — open **Request New App** in the console sidebar (`/request`). Four guided steps
+(app basics → data → workflows & access → review) produce a human-readable summary and a
+backend-validated YAML spec to copy or download, plus the exact manual hand-off steps. No YAML knowledge needed.
+
+What is and is not automated — please read before demoing:
+
+| Step | Automated? |
+|---|---|
+| Spec validation (structure, cross-references, category rules) | Yes — same code for CLI, API, wizard |
+| YAML rendering, draft saved in the browser | Yes |
+| Committing the spec to `specs/`, engineering review | **Manual** |
+| Asking Devin to implement; Devin's PR | **Manual trigger**; Devin writes real code by following the Skill — nothing is generated from the spec |
+| Code review, merge, "app appears in sidebar" | **Manual** |
+| Building a second app from a wizard-produced spec | **Not demonstrated yet** — `specs/feature_flags.yaml` exists and validates; the module does not |
+
+### How Devin was used in this project
+
+1. The brief became `specs/kyc.yaml`; Devin built the template first ([PR #3](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/3)), then the KYC app from the spec ([PR #2](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/2)).
+2. Devin Review and a recorded browser test each found real bugs (spec YAML, stale dialog reason, table keyboard access, stale panel after 409, label typo) which were fixed in-session — see `docs/IMPLEMENTATION_LOG.md`.
+3. Devin audited its own work (`AUDIT.md`), fixed the P0 items, then added the spec schema, form controls and wizard (PR #4).
 
 ## 3. Architecture
 
@@ -46,11 +67,12 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 | Spec | `specs/<app_id>.yaml` | Source of truth per tool |
 | Repo instructions | `AGENTS.md` | Architecture rules, conventions, run/test commands |
 | Devin Skill | `.agents/skills/create-internal-tool/SKILL.md` | 9-step procedure: read spec → inspect → reuse → implement → test → run → fix → summarise |
-| Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `registry.py` |
+| Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `registry.py`, `spec.py` + `spec_router.py` (spec schema + validation) |
 | Backend app | `backend/app/apps/kyc/` | `router → service → repository`, `schema.py`, `seed.py`, `rules.py`, `schemas.py` |
-| Frontend shared | `frontend/src/shared/` | `AppShell`, `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toast`, states, `api` client, `useQuery` |
+| Frontend shared | `frontend/src/shared/` | `AppShell`, `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toast`, states, form controls (`TextField`, `SelectField`, `Toggle`, …), `api` client, `useQuery` |
+| Request wizard | `frontend/src/apps/request/` | Non-engineer entry point; `buildSpec.ts` maps the guided answers to a spec, backend validates |
 | Frontend app | `frontend/src/apps/kyc/` | `KycQueuePage`, `CaseDetailPanel`, typed `api.ts` |
-| Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py` |
+| Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py`, `test_spec.py` |
 | Log | `docs/IMPLEMENTATION_LOG.md` | Milestones, decisions, assumptions, actual test output |
 
 Key decisions
@@ -76,14 +98,15 @@ npm install
 npm run dev                                       # http://localhost:5173  (proxies /api -> :8000)
 ```
 
-Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to act as
+Open **http://localhost:5173/kyc** (KYC queue) or **http://localhost:5173/request** (Request New App wizard). Use the persona switcher (top of sidebar) to act as
 `Ana Okafor (reviewer)`, `Ben Castillo (reviewer)` or `Vic Lindqvist (viewer)`. Re-run
 `init-db --reset --seed` at any time to restore the demo data.
 
 ## 5. Tests
 
 ```bash
-cd backend && python -m pytest          # 13 passed  (2 core + 11 KYC)
+cd backend && python -m pytest          # 31 passed  (2 core + 13 KYC + 16 spec)
+cd backend && python -m app.cli validate-spec ../specs/*.yaml   # OK for kyc.yaml and feature_flags.yaml
 cd frontend && npm run typecheck        # tsc -b, clean
 cd frontend && npm run build            # production build, clean
 ```
@@ -108,7 +131,8 @@ Browser verification (AC-10) was performed end to end (including persistence acr
 
 ## 6. Building the next internal tool with the template
 
-1. Write `specs/<app_id>.yaml` with the same sections as `specs/kyc.yaml`.
+1. Write `specs/<app_id>.yaml` (or have a business user produce it with the wizard) and make sure
+   `python -m app.cli validate-spec specs/<app_id>.yaml` passes.
 2. Ask Devin: *"Use the `create-internal-tool` skill to implement `specs/<app_id>.yaml`."*
 3. Devin follows `.agents/skills/create-internal-tool/SKILL.md`: reads the spec and `AGENTS.md`,
    inspects `shared/` and the existing apps, reuses the shell/table/filters/badges/panel/dialog/toast
@@ -138,7 +162,8 @@ What Devin implemented: everything in this repository except the initial README 
 
 Tests executed and results (actual output, this session):
 ```
-backend  $ python -m pytest        → 13 passed, 2 warnings in 0.32s
+backend  $ python -m pytest        → 31 passed, 2 warnings in 0.77s
+backend  $ python -m app.cli validate-spec ../specs/*.yaml → OK ×2
 frontend $ npm run typecheck       → tsc -b (no errors)
 frontend $ npm run build           → ✓ built
 ```
@@ -148,9 +173,9 @@ Corrections made during the session
 - Browser testing found two UI bugs: an audit label typo ("Rejectd by") and a stale detail panel that kept old status/buttons after a 409 conflict; both fixed (failed actions now refetch case + queue) and re-verified.
 - Devin Review on PR #1: spec YAML did not parse (list/map mix, unquoted `enum [...]`) → fixed and validated with `yaml.safe_load`; spec renamed to `specs/kyc.yaml` to match the `specs/<app_id>.yaml` convention; `ConfirmDialog` reset its reason on every open; `DataTable` rows made keyboard-navigable without stealing Enter from nested controls.
 
-Not completed / out of scope: feature-flag second module (stretch goal, not built — reuse is
-demonstrated by the template structure and the KYC module, not by a second app), production
-identity, deployment, pagination.
+Not completed / out of scope: the Feature-Flag module itself (its spec, `specs/feature_flags.yaml`,
+was produced in the wizard's output shape and validates; the app is not built, so second-app reuse
+is **not yet demonstrated**), request persistence/queue, production identity, deployment, pagination.
 
 ## 9. Recommended next steps for production readiness
 

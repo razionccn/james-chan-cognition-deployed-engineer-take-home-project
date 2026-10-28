@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.errors import install_error_handlers
 from app.core.personas import DEMO_PERSONAS
+from app.core.spec_router import router as spec_router
 from app.core.registry import installed_apps
 
 
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     install_error_handlers(app)
+    app.include_router(spec_router, prefix="/api/specs")
 
     @app.get("/api/health")
     def health() -> dict:

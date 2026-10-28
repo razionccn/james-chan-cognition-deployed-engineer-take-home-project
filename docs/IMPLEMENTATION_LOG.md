@@ -95,3 +95,37 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
   `q` ≤ 100 chars. Two new tests: envelope/limits and a simulated stale-read conflict.
 
 Verification: `python -m pytest` → **15 passed**.
+
+## Milestone 5 — Two ways to create an app: shared spec schema, form controls, "Request New App" wizard (PR #4)
+
+Scope decision (from the brief's Part 6): ~2 h budget already consumed by build + audit. Implemented the three
+highest-leverage items; the Feature-Flag app itself is **not** built — its spec is (`specs/feature_flags.yaml`).
+
+Delivered:
+- `backend/app/core/spec.py` — `spec_version: 1` schema (Pydantic, `extra=forbid`): app/category, roles+permissions,
+  entities+typed fields, list/detail views, forms, workflow, audit, acceptance criteria; cross-reference checks
+  (fields exist, filters filterable, states/initial/terminal/actions consistent, roles exist, audit required for writers,
+  category requirements). Free-form sections (`business_rules`, `api`, `seed_data`, `non_goals`, `devin_notes`) pass through.
+- `POST /api/specs/validate` (object or YAML text) → `{valid, errors[{path,message}], warnings, normalized, yaml}`;
+  `GET /api/specs/schema` (JSON Schema), `GET /api/specs/meta`; CLI `python -m app.cli validate-spec <files>` (exit 1 on failure).
+- `specs/kyc.yaml` migrated to the schema (same content, structured fields/views/workflow); validates clean.
+- Shared form controls: `FormField`, `TextField`, `TextArea`, `SelectField`, `Toggle`, `CheckboxGroup`, `parseList`.
+- `frontend/src/apps/request/` — 4-step wizard (basics → data → workflows & access → review). Category defaults seed a
+  sensible starting point; `buildSpec.ts` maps the draft to a spec document; the backend validates it; the user gets a
+  summary, the error list (with spec paths) or the YAML with copy/download, plus explicit manual hand-off steps and a
+  Devin prompt. Draft persists in localStorage. **No persistence of requests, no automatic creation/deployment.**
+- `specs/feature_flags.yaml` — produced from the wizard's output shape and validated; marked "specification only".
+- Tests `backend/tests/test_spec.py` (16): kyc.yaml valid; wizard-shaped feature-flag spec valid (with expected warnings);
+  11 parametrised invalid cases each reported with a path; crud-needs-form / id-not-editable; endpoint accepts object+YAML,
+  rejects neither; CLI exit codes.
+
+Verification (actual): `python -m pytest` → **31 passed**; `npm run typecheck` clean; `npm run build` clean;
+`python -m app.cli validate-spec ../specs/*.yaml` → OK for both files.
+
+Template components reused by the wizard: `PageHeader`, `Button`, `StatusBadge`, `ErrorState`, `LoadingState`, `useToast`,
+`useQuery`, `api` client, `AppShell`/registry (the wizard is just another registered app) + the new form controls.
+
+Honest status of automation:
+- Automated: validation (same code path for CLI, API and wizard), YAML rendering, draft persistence in the browser.
+- Manual: committing the spec to `specs/`, engineering review, asking Devin to implement, code review, merge.
+- Not demonstrated: building a second app from a wizard-produced spec (Feature-Flag panel). The spec exists; the module does not.

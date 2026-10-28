@@ -25,13 +25,40 @@ backend/app/core/db.py                SQLite connection, transaction(), init_db(
 backend/app/core/errors.py            AppError hierarchy -> {"error": {code, message}} responses
 backend/app/core/personas.py          DEV-ONLY simulated identities + require_role()
 backend/app/core/registry.py          list of installed app modules
-backend/app/cli.py                    `python -m app.cli init-db [--reset] [--seed]`
+backend/app/core/spec.py              application-spec schema (spec_version 1) + validate_spec()
+backend/app/core/spec_router.py       POST /api/specs/validate, GET /api/specs/schema|meta
+backend/app/cli.py                    `python -m app.cli init-db [--reset] [--seed]`, `validate-spec <files>`
 frontend/src/shared/layout/AppShell   sidebar nav (from apps/registry.ts) + persona switcher
-frontend/src/shared/components/       DataTable, FilterBar, StatusBadge, DetailPanel, ConfirmDialog, Toast, States, Button, PageHeader
+frontend/src/shared/components/       DataTable, FilterBar, StatusBadge, DetailPanel, ConfirmDialog, Toast, States, Button, PageHeader,
+                                      Form controls: FormField, TextField, TextArea, SelectField, Toggle, CheckboxGroup
+frontend/src/apps/request/            "Request New App" wizard (non-engineer entry point; produces a validated spec)
 frontend/src/shared/api/client.ts     apiFetch / ApiError / persona header
 frontend/src/shared/api/useQuery.ts   loading / error / success hook
 frontend/src/apps/registry.ts         app list used for navigation and routing
 ```
+
+## Application specifications (`specs/<app_id>.yaml`)
+
+One schema serves both entry points — engineers editing YAML and non-engineers using the
+**Request New App** wizard. The schema lives in `backend/app/core/spec.py` (Pydantic,
+`spec_version: 1`); validate with `python -m app.cli validate-spec specs/<app_id>.yaml` or
+`POST /api/specs/validate`. `specs/kyc.yaml` is the reference example.
+
+| Section | Validated? | Used for |
+|---|---|---|
+| `app` (id, name, category, purpose, users) | yes | module/route names; `category` ∈ review_queue / crud / admin_panel |
+| `roles[]` (id, can[view/act/create/edit/delete/admin]) | yes | `require_role()` checks; persona setup |
+| `entities[].fields[]` (name, type, options, required, searchable, filterable) | yes + cross-refs | schema.py, Pydantic models, list/search/filter wiring |
+| `views.list` / `views.detail` | yes (fields must exist, filters must be filterable) | page layout: DataTable columns, FilterBar, DetailPanel sections |
+| `forms[]` (entity, fields, roles, requires_reason) | yes | editable fields → form controls + PATCH endpoint; required for crud/admin_panel |
+| `workflow` (states, initial, terminal, actions from→to, roles) | yes (state consistency) | rules.py transition table; required for review_queue |
+| `audit` | yes (must be enabled when forms/workflow exist) | audit table + history section |
+| `acceptance_criteria[]` | yes (≥ 1) | one pytest per criterion |
+| `business_rules`, `api`, `seed_data`, `non_goals`, `devin_notes` | **free-form** | read and interpreted by Devin; not checked |
+
+**Nothing is generated from a spec.** Validation guarantees the spec is consistent; Devin (or an
+engineer) still writes the application code by following the Skill. Rule-of-thumb when implementing:
+every validated section above maps to a concrete file or test; every free-form section is guidance.
 
 ## Architecture rules
 
@@ -75,6 +102,8 @@ real policy; the `require_role()` seam is where that plugs in.
   and it is genuinely generic; otherwise keep it in the app folder.
 - Every list view has loading, empty and error states. Every consequential action goes
   through `ConfirmDialog` and shows a `useToast()` success message.
+- Editable fields (spec `forms[]`) use the shared form controls (`TextField`, `SelectField`,
+  `Toggle`, …) inside `FormField`; show the backend's validation message in `error`.
 - Keep the backend's error `message` visible to the user on failure.
 
 ## Running locally
@@ -110,7 +139,7 @@ cd frontend && npm run typecheck      # tsc -b
 
 ## Requirements for every new internal tool
 
-- Starts from a spec in `specs/<app_id>.yaml` with the same sections as `kyc.yaml`.
+- Starts from a spec in `specs/<app_id>.yaml` that passes `python -m app.cli validate-spec`.
 - Follows the module layout above and registers itself in both registries.
 - Enforces its business rules and roles in the backend, with an audit table for writes.
 - Ships deterministic seed data and acceptance tests before UI polish.

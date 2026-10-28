@@ -1,4 +1,5 @@
 import { KycQueuePage } from './kyc/KycQueuePage'
+import { RequestAppPage } from './request/RequestAppPage'
 import type { ComponentType } from 'react'
 
 /**
@@ -23,5 +24,12 @@ export const appRegistry: AppDefinition[] = [
     description: 'Review identity-verification cases: approve, reject or escalate with an audited reason.',
     path: '/kyc',
     Page: KycQueuePage,
+  },
+  {
+    id: 'request',
+    name: 'Request New App',
+    description: 'Describe an internal tool in plain language and get a validated specification for engineering review.',
+    path: '/request',
+    Page: RequestAppPage,
   },
 ]

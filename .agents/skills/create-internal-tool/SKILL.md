@@ -8,10 +8,16 @@ description: Build a new internal application for the Fintech Operations Console
 This is a repeatable engineering procedure, not a code generator. Follow the
 steps in order; do not skip the inspection or verification steps.
 
-## 1. Read the specification
-- Open `specs/<app_id>.yaml`. Read every section: roles, data_model, workflow,
-  business_rules, api, pages, seed_data, acceptance_criteria, non_goals.
+## 1. Read and validate the specification
+- Run `cd backend && python -m app.cli validate-spec ../specs/<app_id>.yaml`. Do not start on an
+  invalid spec; fix it (or ask) first. Schema: `backend/app/core/spec.py`; section meaning: `AGENTS.md`
+  "Application specifications".
+- Read every section. Validated sections (`app`, `roles`, `entities`, `views`, `forms`, `workflow`,
+  `audit`, `acceptance_criteria`) map 1:1 to code and tests; free-form sections (`business_rules`,
+  `api`, `seed_data`, `non_goals`, `devin_notes`) are guidance you must honour but interpret.
 - Note every business rule's `on_violation` status/code — the backend must return exactly those.
+- `app.category` tells you the shape: `review_queue` → workflow actions + ConfirmDialog with reason;
+  `crud` / `admin_panel` → `forms[]` → edit form with shared form controls + PATCH endpoint + audit.
 - If something essential is missing, make a sensible decision, write it down in
   `docs/IMPLEMENTATION_LOG.md` under "Assumptions", and keep going. Do not block on clarifications.
 
@@ -20,12 +26,15 @@ steps in order; do not skip the inspection or verification steps.
 - Backend shared code: `backend/app/core/` (`db.py` transactions, `errors.py` error types,
   `personas.py` roles, `registry.py` app registration).
 - Frontend shared code: `frontend/src/shared/components/` (DataTable, FilterBar, StatusBadge,
-  DetailPanel, ConfirmDialog, Toast, States, Button, PageHeader), `shared/api/client.ts`,
+  DetailPanel, ConfirmDialog, Toast, States, Button, PageHeader, form controls: FormField/TextField/
+  TextArea/SelectField/Toggle/CheckboxGroup), `shared/api/client.ts`,
   `shared/api/useQuery.ts`, `shared/layout/AppShell.tsx`, `apps/registry.ts`.
 - Existing apps under `backend/app/apps/` and `frontend/src/apps/` — copy their structure.
 
 ## 3. Reuse before you build
-- Use the shared components for tables, filters, badges, detail panels, confirmations and toasts.
+- Use the shared components for tables, filters, badges, detail panels, confirmations, toasts and forms.
+- For `forms[]`: one `PATCH /<entity>/{id}` endpoint per form taking `{ <fields…>, reason }`, role-checked,
+  validated field-by-field in `service.py`, audited (previous → new value per field) in one transaction.
 - Use `AppError` subclasses for rule violations and `transaction()` for multi-statement writes.
 - Only add a new shared component if the current app needs it *and* it is generic. Put
   app-specific UI in `frontend/src/apps/<app_id>/`.
