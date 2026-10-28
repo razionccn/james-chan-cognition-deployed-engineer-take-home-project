@@ -1,12 +1,19 @@
-# Fintech Operations Console — Internal Tools Template + KYC Review Queue
+# Fintech Operations Console — Internal Tools Template + KYC Review Queue + Feature-Flag Admin Panel
 
 Proof of concept for a Cognition Deployed Engineer case study: a repeatable
 **Internal Tools Template** for building
-internal business tools with Devin, and a working **KYC Review Queue** built by following it.
+internal business tools with Devin, and two working applications built by following it:
 
-The chain it demonstrates:
+| App | Spec | Route | API | What it does |
+|---|---|---|---|---|
+| **KYC Review Queue** | `specs/kyc.yaml` | `/kyc` | `/api/kyc` | Review queue of 24 synthetic cases; approve / reject / escalate with mandatory reason and audit trail |
+| **Feature-Flag Admin Panel** | `specs/feature-flags.yaml` | `/feature-flags` | `/api/feature_flags` | 14 synthetic flags across development / staging / production; search and filter; reviewer toggles non-production flags with optional reason; production locked; every toggle audited |
+
+The chain it demonstrates, twice:
 
 > Structured spec (`specs/kyc.yaml`) → reusable template (`AGENTS.md`, Skill, shared shell/components/services) → Devin implementation (PR #2) → functional KYC review app → verified behaviour (pytest acceptance tests + browser walkthrough)
+
+> Same template → **fresh** Devin session with only the repository as context (`specs/feature-flags.yaml`) → Feature-Flag Admin Panel → verified behaviour, with measured build metrics in `docs/FEATURE_FLAG_BUILD_METRICS.md`
 
 All data is synthetic. The persona switcher is a development-only fixture, not authentication.
 
@@ -47,11 +54,12 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 | Repo instructions | `AGENTS.md` | Architecture rules, conventions, run/test commands |
 | Devin Skill | `.agents/skills/create-internal-tool/SKILL.md` | 9-step procedure: read spec → inspect → reuse → implement → test → run → fix → summarise |
 | Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `registry.py` |
-| Backend app | `backend/app/apps/kyc/` | `router → service → repository`, `schema.py`, `seed.py`, `rules.py`, `schemas.py` |
-| Frontend shared | `frontend/src/shared/` | `AppShell`, `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toast`, states, `api` client, `useQuery` |
-| Frontend app | `frontend/src/apps/kyc/` | `KycQueuePage`, `CaseDetailPanel`, typed `api.ts` |
-| Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py` |
+| Backend apps | `backend/app/apps/kyc/`, `backend/app/apps/feature_flags/` | `router → service → repository`, `schema.py`, `seed.py`, `rules.py`, `schemas.py` |
+| Frontend shared | `frontend/src/shared/` | `AppShell`, `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toggle`, `Toast`, states, `api` client, `useQuery` |
+| Frontend apps | `frontend/src/apps/kyc/`, `frontend/src/apps/feature_flags/` | `KycQueuePage` + `CaseDetailPanel`; `FeatureFlagsPage` + `FlagDetailPanel`; typed `api.ts` each |
+| Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py`, `test_feature_flags.py` |
 | Log | `docs/IMPLEMENTATION_LOG.md` | Milestones, decisions, assumptions, actual test output |
+| Metrics | `docs/FEATURE_FLAG_BUILD_METRICS.md` | Baseline vs. final line counts, elapsed time, reuse, per-AC verification and skeptical evaluation of the second app |
 
 Key decisions
 - **Business rules live only in the backend** (`service.py`). The UI hides disallowed actions for UX, but every rule is re-checked server-side.
@@ -83,10 +91,15 @@ Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to
 ## 5. Tests
 
 ```bash
-cd backend && python -m pytest          # 13 passed  (2 core + 11 KYC)
+cd backend && python -m pytest          # 28 passed  (2 core + 13 KYC + 13 feature flags)
 cd frontend && npm run typecheck        # tsc -b, clean
 cd frontend && npm run build            # production build, clean
 ```
+
+Both apps are served by the same backend and frontend, so "running each one" is the same two commands in §4:
+after `init-db --reset --seed` the sidebar shows **KYC Review Queue** (`/kyc`) and **Feature-Flag Admin Panel**
+(`/feature-flags`). To run one app's tests only: `python -m pytest tests/test_kyc.py` or
+`python -m pytest tests/test_feature_flags.py`.
 
 `backend/tests/test_kyc.py` maps 1:1 to the spec's acceptance criteria and runs through the real
 FastAPI app and a real SQLite file (no mocks):
@@ -106,6 +119,13 @@ FastAPI app and a real SQLite file (no mocks):
 
 Browser verification (AC-10) was performed end to end (including persistence across a backend restart and backend-enforced 403/409/422); the exact checklist is in `docs/IMPLEMENTATION_LOG.md` and the recording is on PR #2.
 
+`backend/tests/test_feature_flags.py` does the same for `specs/feature-flags.yaml`: list, environment/state
+filters and invalid filter → 422, search by name or id, reviewer toggle of a staging flag, production toggle →
+403 `environment_locked`, viewer/missing/unknown persona → 403 `forbidden`, persistence across a new connection
+and a new app instance, exactly one audit event per toggle (previous/new, actor, reason, timestamp), no-op → 409,
+unknown flag → 404, simulated concurrent write → 409, and `/api/health` listing both apps. Its browser
+walkthrough and metrics are in `docs/FEATURE_FLAG_BUILD_METRICS.md` §E.
+
 ## 6. Building the next internal tool with the template
 
 1. Write `specs/<app_id>.yaml` with the same sections as `specs/kyc.yaml`.
@@ -117,8 +137,11 @@ Browser verification (AC-10) was performed end to end (including persistence acr
    criterion), runs everything, fixes failures, and records the result in `docs/IMPLEMENTATION_LOG.md`.
 4. Review the PR. The spec + tests make "did it build what we asked" a checklist rather than a judgement call.
 
-A refunds or feature-flag tool would add roughly: one schema, one seed, one service with its own
-rules, one router, one page — and zero new shared infrastructure unless the spec genuinely needs it.
+This was exercised for real with the Feature-Flag Admin Panel, built in a fresh Devin session that had only
+this repository as context: 570 application-specific source lines, 49 lines of shared-template change
+(a generic `Toggle` component, an optional-reason mode for `ConfirmDialog`, two registry entries), zero
+changes to KYC. Measurements, what went wrong and what the template did *not* help with are in
+`docs/FEATURE_FLAG_BUILD_METRICS.md`.
 
 ## 7. Known limitations (read before demoing)
 
@@ -148,9 +171,11 @@ Corrections made during the session
 - Browser testing found two UI bugs: an audit label typo ("Rejectd by") and a stale detail panel that kept old status/buttons after a 409 conflict; both fixed (failed actions now refetch case + queue) and re-verified.
 - Devin Review on PR #1: spec YAML did not parse (list/map mix, unquoted `enum [...]`) → fixed and validated with `yaml.safe_load`; spec renamed to `specs/kyc.yaml` to match the `specs/<app_id>.yaml` convention; `ConfirmDialog` reset its reason on every open; `DataTable` rows made keyboard-navigable without stealing Enter from nested controls.
 
-Not completed / out of scope: feature-flag second module (stretch goal, not built — reuse is
-demonstrated by the template structure and the KYC module, not by a second app), production
-identity, deployment, pagination.
+Second application (Feature-Flag Admin Panel): built later in a separate fresh session; see
+`docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output (`28 passed`), elapsed time, reuse and the
+browser-testing defect it surfaced (optional reason missing from `ConfirmDialog`, fixed).
+
+Not completed / out of scope: production identity, deployment, pagination, frontend tests / CI.
 
 ## 9. Recommended next steps for production readiness
 
@@ -158,4 +183,4 @@ identity, deployment, pagination.
 2. Move from SQLite to Postgres with migrations (Alembic or plain SQL), keeping the `repository.py` boundary.
 3. Add optimistic concurrency (`expected_status` on review actions) and idempotency keys.
 4. Add structured logging/metrics, CI (pytest + typecheck + build), and a Playwright smoke test for the queue flow.
-5. Build the second tool (refunds or feature flags) from a spec to measure the real marginal cost of a new module.
+5. Build a third tool with a different shape (forms, uploads, charts) to test the template beyond audited list + detail + state change; promote the audit table/timeline and filter-state patterns to shared code once a third app repeats them.

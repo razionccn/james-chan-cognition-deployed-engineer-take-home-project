@@ -95,3 +95,40 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
   `q` ≤ 100 chars. Two new tests: envelope/limits and a simulated stale-read conflict.
 
 Verification: `python -m pytest` → **15 passed**.
+
+## Milestone 5 — Feature-Flag Admin Panel (second app, fresh session, built by following the Skill against `specs/feature-flags.yaml`)
+
+Full measurements, timeline and skeptical evaluation: `docs/FEATURE_FLAG_BUILD_METRICS.md`.
+Baseline `0364651` (main) → final code commit `be1f095`. Session: https://app.devin.ai/sessions/929c6363efd14330b0ab305373bc0200
+
+- `specs/feature-flags.yaml`: 14 flags across development / staging / production; AC-1 … AC-10; non-goals (no real
+  provider, no CRUD, no rollouts, no SSO, no pagination).
+- Backend `app/apps/feature_flags/`: `feature_flags` + `feature_flag_audit_events` tables; `GET /meta`, `GET /flags`
+  (`q`, `environment`, `enabled`), `GET /flags/{id}` (detail + audit events), `POST /flags/{id}/toggle`
+  (`{enabled, reason?}`). Rules in `service.py`: reviewer only (403 `forbidden`), production locked
+  (403 `environment_locked`), unknown → 404, no-op → 409, reason ≤ 500 chars; conditional
+  `UPDATE … WHERE enabled = ?` + audit insert inside one `transaction()`.
+- Frontend `apps/feature_flags/`: list page (search, environment + state filters, debounced, URL-selected row), detail
+  panel (description list, change history, footer with lock / read-only notice and `Toggle`), `ConfirmDialog` with
+  optional reason, toast, backend error shown inline, refetch on success and on failure.
+- Shared changes: `Toggle` component (new, generic), `ConfirmDialog.collectReason` (optional reason field),
+  both registries. KYC files untouched.
+
+Assumptions / decisions (repository had no guidance)
+- Flag writes reuse the global `reviewer` role rather than adding an app-scoped role to `personas.py`.
+- `development` is editable like `staging`; only `production` is locked (the brief mandates staging editable and
+  production locked and is silent on development).
+- Reason is optional for flag toggles (the brief says "simple" toggles), unlike KYC where it is mandatory.
+- Re-sending the current state is a 409 `invalid_transition`, consistent with KYC's invalid-action handling.
+
+Tests (actual output): `python -m pytest -o addopts="" -q -p no:warnings` → **28 passed in 0.66s**
+(2 core + 13 KYC unchanged + 13 feature-flag). `npm run typecheck` clean; `npm run build` ✓.
+First run after writing the tests was `1 failed, 27 passed`: the test sent `"enabled": "yes"` expecting 422 but
+Pydantic lax mode coerces it to `true`; the test was corrected, the API was not changed.
+
+Browser verification (testing agent, recorded): run #1 at `085d208` — 7/8 PASS; FAIL: the toggle confirmation had
+no optional reason field because `ConfirmDialog` only rendered it when required. Fixed (`collectReason`), run #2 at
+`be1f095` — PASS, and KYC's Reject dialog still requires a reason.
+
+Known limitations: simulated personas (not auth); no app-scoped roles; audit table/timeline duplicated from KYC
+by convention rather than shared; no frontend tests / CI; concurrency guard tested with a simulated stale read only.
