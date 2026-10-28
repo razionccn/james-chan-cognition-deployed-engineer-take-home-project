@@ -62,3 +62,24 @@ def test_transaction_takes_the_write_lock_up_front(db_path):
     finally:
         a.close()
         b.close()
+
+
+@pytest.mark.parametrize("module", installed_apps(), ids=lambda m: m.APP_ID)
+def test_seeded_history_is_consistent_with_seeded_records(conn, module):
+    """AGENTS.md rule 7: a seeded record's updated_at equals the created_at of its newest seeded audit event.
+    The audit table is found by name (*_audit_events) and joined through its declared foreign key."""
+    audit_tables = [t for t in module.TABLES if t.endswith("_audit_events")]
+    assert audit_tables, f"{module.APP_ID} declares no *_audit_events table"
+    for audit_table in audit_tables:
+        fks = conn.execute(f"PRAGMA foreign_key_list({audit_table})").fetchall()
+        assert fks, f"{audit_table} has no foreign key to its entity table"
+        parent, child_col, parent_col = fks[0]["table"], fks[0]["from"], fks[0]["to"]
+        mismatches = conn.execute(
+            f"""
+            SELECT p.{parent_col}, p.updated_at, MAX(e.created_at) AS newest
+            FROM {parent} p JOIN {audit_table} e ON e.{child_col} = p.{parent_col}
+            GROUP BY p.{parent_col} HAVING p.updated_at != newest
+            """
+        ).fetchall()
+        assert conn.execute(f"SELECT COUNT(*) FROM {audit_table}").fetchone()[0] > 0
+        assert [tuple(r) for r in mismatches] == [], f"{module.APP_ID}: seeded updated_at disagrees with newest audit event"
