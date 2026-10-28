@@ -1,15 +1,14 @@
 # AGENTS.md — Fintech Operations Console
 
-Instructions for engineers and for Devin working in this repository. Read this
-before changing anything. The procedure for adding a new internal application
-is in `.agents/skills/create-internal-tool/SKILL.md`; application
-specifications live in `specs/`.
+Rules and conventions for engineers and for Devin changing code in this repository. Read this
+before changing anything. What the project is, how to run it and the evidence for what was built
+are in `README.md`; the procedure for adding a new internal application is in
+`.agents/skills/create-internal-tool/SKILL.md`; application specifications live in `specs/`.
 
-## What this repository is
+## Layout
 
-A console of small internal business applications (a Power Apps alternative)
-sharing one frontend shell, one backend, one SQLite database, and one set of
-conventions. Each application is a self-contained module on both sides:
+One frontend shell, one backend, one SQLite database. Each application is a self-contained
+module on both sides:
 
 ```
 specs/<app_id>.yaml                   structured requirements (source of truth)
@@ -95,34 +94,12 @@ real policy; the `require_role()` seam is where that plugs in.
   through `ConfirmDialog` and shows a `useToast()` success message.
 - Keep the backend's error `message` visible to the user on failure.
 
-## Running locally
+## Running and testing
 
-Prerequisites: Python 3.10+, Node 20+ (with nvm: `source ~/.nvm/nvm.sh && nvm use 20` first).
+Setup, run and test commands are in `README.md` §4–§5 (single source; do not copy them here).
+Every PR runs `pytest`, `npm run typecheck`, `npm test` and `npm run build` in CI (`.github/workflows/ci.yml`).
 
-```bash
-# backend
-cd backend
-python -m venv .venv && source .venv/bin/activate   # optional
-pip install -r requirements.txt
-python -m app.cli init-db --reset --seed            # creates backend/data/console.db
-uvicorn app.main:app --reload --port 8000
-
-# frontend (second terminal)
-cd frontend
-npm install
-npm run dev                                          # http://localhost:5173 (proxies /api -> :8000)
-```
-
-## Testing
-
-```bash
-cd backend && python -m pytest        # real FastAPI app + real temp SQLite per test
-cd frontend && npm run typecheck      # tsc -b
-cd frontend && npm test               # Vitest + Testing Library (shared components)
-cd frontend && npm run build          # tsc -b && vite build
-```
-
-All four run in CI (`.github/workflows/ci.yml`) on every pull request.
+## Testing conventions
 
 - Tests live in `backend/tests/`. `conftest.py` provides `client` (seeded temp DB),
   `conn`, `reviewer_headers`, `viewer_headers`.

@@ -62,11 +62,8 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 | Metrics | `docs/FEATURE_FLAG_BUILD_METRICS.md` | Baseline vs. final line counts, elapsed time, reuse, per-AC verification and skeptical evaluation of the second app |
 | Audit | `docs/TEMPLATE_AUDIT.md` | Skeptical review after two apps: scores, evidence, prioritised fixes; §H lists what was applied |
 
-Key decisions
-- **Business rules live only in the backend** (`service.py`). The UI hides disallowed actions for UX, but every rule is re-checked server-side.
-- **No ORM.** SQLite via the standard library keeps dependencies minimal and makes the status-update + audit-insert transaction explicit (`transaction(conn)`).
-- **Workflow as data.** `rules.py` holds `TRANSITIONS = {(action, from_status): to_status}`; the API exposes `allowed_actions` so the UI never hard-codes the state machine.
-- **Simulated identity.** `X-Demo-User` header → persona → role. Clearly a fixture; `require_role()` is the seam a real IdP replaces.
+Architecture rules (backend-only business rules, router → service → repository, uniform error envelope,
+transactions, audit, timestamps, naming) are in `AGENTS.md` — the single place they are written down.
 
 ## 4. Running locally
 
@@ -132,11 +129,8 @@ walkthrough and metrics are in `docs/FEATURE_FLAG_BUILD_METRICS.md` §E.
 
 1. Write `specs/<app_id>.yaml` with the same sections as `specs/kyc.yaml`.
 2. Ask Devin: *"Use the `create-internal-tool` skill to implement `specs/<app_id>.yaml`."*
-3. Devin follows `.agents/skills/create-internal-tool/SKILL.md`: reads the spec and `AGENTS.md`,
-   inspects `shared/` and the existing apps, reuses the shell/table/filters/badges/panel/dialog/toast
-   and the error/transaction/persona conventions, adds `backend/app/apps/<app_id>/` and
-   `frontend/src/apps/<app_id>/`, registers both, writes `tests/test_<app_id>.py` (one per acceptance
-   criterion), runs everything, fixes failures, and records the result in `docs/IMPLEMENTATION_LOG.md`.
+3. Devin follows the ten steps in `.agents/skills/create-internal-tool/SKILL.md` (read spec → inspect →
+   reuse → backend → frontend → tests → run → fix → summarise → retrospective).
 4. Review the PR. The spec + tests make "did it build what we asked" a checklist rather than a judgement call.
 5. The Skill's last step is a retrospective: the build appends what the spec, Skill or template lacked to
    `.agents/skills/create-internal-tool/LEARNINGS.md` and applies its promotion rules in the same PR
@@ -153,8 +147,7 @@ changes to KYC. Measurements, what went wrong and what the template did *not* he
 
 - **Synthetic data only.** Names, emails, findings and risk scores are invented. No documents are stored.
 - **Simulated permissions.** `X-Demo-User` is a dev-only header; anyone can send it. There is no
-  authentication, session, or SSO. Production needs an identity provider (OIDC/SAML) and a real
-  authorization policy wired in at `require_role()`.
+  authentication, session or SSO (mechanics and the production seam: `AGENTS.md` "Authorization").
 - **No real KYC provider, sanctions screening, or case assignment workflow.** "Assigned reviewer" is informational.
 - **No security or compliance certification**, no rate limiting, no CSRF/CORS hardening beyond localhost.
 - **No deployment, monitoring, backups or migrations.** SQLite file on disk; schema is `CREATE TABLE IF NOT EXISTS` only.
