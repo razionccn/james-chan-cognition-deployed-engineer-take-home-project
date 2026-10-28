@@ -89,7 +89,7 @@ Open **http://localhost:5173/kyc**. Use the persona switcher (top of sidebar) to
 ## 5. Tests
 
 ```bash
-cd backend && python -m pytest          # 35 passed  (7 core + 14 KYC + 14 feature flags)
+cd backend && python -m pytest          # 38 passed  (10 core + 14 KYC + 14 feature flags)
 cd frontend && npm run typecheck        # tsc -b, clean
 cd frontend && npm test                 # Vitest: 4 passed (ConfirmDialog)
 cd frontend && npm run build            # production build, clean
@@ -127,7 +127,8 @@ walkthrough and metrics are in `docs/FEATURE_FLAG_BUILD_METRICS.md` §E.
 
 ## 6. Building the next internal tool with the template
 
-1. Write `specs/<app_id>.yaml` with the same sections as `specs/kyc.yaml`.
+1. Write `specs/<app_id>.yaml`: copy `specs/TEMPLATE.yaml` and follow the field-by-field guide in
+   `specs/README.md` (it also explains how page elements map to API endpoints).
 2. Ask Devin: *"Use the `create-internal-tool` skill to implement `specs/<app_id>.yaml`."*
 3. Devin follows the ten steps in `.agents/skills/create-internal-tool/SKILL.md` (read spec → inspect →
    reuse → backend → frontend → tests → run → fix → summarise → retrospective).

@@ -1,0 +1,181 @@
+# Application specification: <Human-readable tool name>
+# Copy this file to specs/<app_id>.yaml and replace every <placeholder>. Delete comments you no
+# longer need. Field-by-field guidance: specs/README.md. Worked examples: kyc.yaml, feature_flags.yaml.
+#
+# Spec conventions (AGENTS.md rules 7–8):
+# - This file is named `specs/<app.id>.yaml`; `app.id` is snake_case and also names the backend
+#   package, the API prefix and the table prefix (checked by backend/tests/test_core.py).
+# - `roles` refer to the global persona roles (reviewer / viewer) in backend/app/core/personas.py.
+# - All `datetime` fields are ISO-8601 UTC with `Z` suffix at second precision.
+# - Seeded audit history must be consistent with the seeded records (`updated_at` == newest event).
+
+app:
+  id: <app_id>                          # snake_case, e.g. refund_requests
+  name: <Tool Name>                     # sidebar / page title, e.g. Refund Requests
+  console: Fintech Operations Console
+  purpose: >
+    <2–3 sentences: who uses it, what they look at, what they can change, what is recorded.>
+  data_policy: "Synthetic records only. <What must never appear, e.g. real customers, documents, secrets>"
+
+roles:
+  - id: reviewer                        # the only write role that exists today
+    description: <What a reviewer may do in this tool, e.g. approve or deny a refund.>
+  - id: viewer
+    description: Read-only. Can view records and history but cannot modify anything.
+roles_note: >
+  Roles come from the DEV-ONLY simulated persona header (X-Demo-User). This is not
+  authentication. See AGENTS.md "Authorization".
+
+data_model:
+  <entities>:                           # plural entity table, e.g. refund_requests
+    primary_key: id                     # e.g. RR-1001 — a readable prefix + number
+    fields:
+      id: string
+      <field>: string                   # one line per column; add a comment for format/examples
+      <field>: enum [a, b, c]           # enumerations are exhaustive; the backend validates them
+      <field>: boolean
+      <field>: datetime                 # ISO-8601 UTC "Z"
+      updated_at: datetime              # required: when the record last changed
+      updated_by: string                # required if the UI shows "last changed by"
+    constraints:
+      - <e.g. unique (name, environment)>
+  <entity>_audit_events:                # required: one audit table per entity, singular prefix
+    primary_key: id (autoincrement)
+    fields:
+      <entity>_id: fk -> <entities>.id
+      action: enum [<action_1>, <action_2>]
+      previous_<field>: <type>          # the value before the change
+      new_<field>: <type>               # the value after
+      actor_id: string                  # persona id
+      actor_name: string
+      reason: string                    # "non-empty" or "optional, may be empty"
+      created_at: datetime
+
+# ---- Domain rules: keep ONE of the two blocks below (or write your own), delete the other ----
+workflow:                               # for tools whose records move through states
+  states: [<s1>, <s2>, <s3>]
+  initial: <s1>
+  terminal: [<s3>]
+  transitions:
+    - { action: <action_1>, from: <s1>, to: <s2> }
+    - { action: <action_2>, from: <s2>, to: <s3> }
+environments:                           # for tools scoped by environment / tenant / region
+  - { id: <env_a>, editable: true }
+  - { id: <env_b>, editable: false }    # locked: the API refuses writes regardless of role
+
+business_rules:                         # numbered; each sentence is testable; codes are exact
+  - id: BR-1
+    rule: <Who may do what, e.g. Only personas with role `reviewer` may perform actions; `viewer` is rejected.>
+    on_violation: 403 forbidden
+  - id: BR-2
+    rule: <Which changes are allowed, e.g. Only transitions listed in workflow.transitions are allowed.>
+    on_violation: 409 invalid_transition
+  - id: BR-3
+    rule: <Required input, e.g. Every action requires a non-empty reason after trimming; or reason is optional ≤ 500 chars.>
+    on_violation: 422 validation_error
+  - id: BR-4
+    rule: A successful action updates the record (<fields>) and inserts exactly one audit event in the same
+      database transaction, using a conditional update so two concurrent writers cannot both succeed.
+  - id: BR-5
+    rule: Unknown record ids return 404 not_found.
+  - id: BR-6
+    rule: All rules above are enforced by the backend; the frontend may additionally hide/disable controls but must never be the only guard.
+
+api:
+  base_path: /api/<app_id>
+  endpoints:
+    - method: GET
+      path: /meta
+      response: { <enums the UI needs>: [...], <editability / transitions>: {...} }
+    - method: GET
+      path: /<entities>
+      query: { q: "search <fields> (case-insensitive substring)", <filter_field>: enum }
+      response: { items: [<EntitySummary>], total: int }
+    - method: GET
+      path: /<entities>/{id}
+      response: <EntityDetail>           # summary fields + audit_events (newest first)
+    - method: POST
+      path: /<entities>/{id}/<action>    # one path per action, or /actions with an `action` field
+      body: { <field>: <type>, reason: string }
+      auth: role reviewer
+      response: <EntityDetail> (updated)
+      errors: [404 not_found, 403 forbidden, 409 invalid_transition, 422 validation_error]
+
+pages:                                  # `source` / `calls` bind an element to an endpoint; omit to use the default convention
+  - id: list
+    route: /<app-route>                 # kebab-case is fine here
+    elements:
+      - search input (<fields searched>)                              # calls: GET /<entities>?q=
+      - <filter_field> filter, <filter_field> filter                   # calls: GET /<entities>?<filter>=
+      - data table with columns: <Col 1>, <Col 2>, <Col 3>, Last updated   # source: GET /<entities>
+      - row click opens detail panel
+      - loading, empty and error states
+  - id: detail
+    route: /<app-route>?<entity>={id}   # side panel over the list; URL keeps it shareable
+    elements:
+      - header: <id>, <title field>, <status/state badge>              # source: GET /<entities>/{id}
+      - summary grid: <fields shown>
+      - actions: <Button or Toggle per action>, shown only when allowed for the record and the reviewer role   # calls: POST /<entities>/{id}/<action>
+      - confirmation dialog that <requires | optionally collects> a reason before submitting
+      - success toast after update; backend error message shown inline on failure
+      - audit history list (newest first) with previous -> new value, actor, reason, timestamp   # source: audit_events of GET /<entities>/{id}
+
+seed_data:
+  count: <10–30>
+  distribution:
+    <field>: { <value>: <n>, <value>: <n> }
+  requirements:
+    - deterministic (same data every seed) so the demo is repeatable
+    - <some> records ship with at least one historical audit event
+    - each record's updated_at equals the created_at of its newest audit event
+    - <enough variety that every filter value returns something>
+
+acceptance_criteria:                    # one test per AC, named test_ac<N>_...
+  - id: AC-1
+    given: seeded database
+    when: GET /api/<app_id>/<entities>
+    then: returns all <count> records with <summary fields>
+  - id: AC-2
+    when: GET /api/<app_id>/<entities>?<filter>=<value>, or ?q=<fragment>
+    then: only matching records are returned; an invalid filter value returns 422 validation_error
+  - id: AC-3
+    given: <a record in state X>, reviewer persona
+    when: POST <action> with <valid body>
+    then: 200, <field> changed, updated_at changed
+  - id: AC-4
+    given: <a record where the action is not allowed>
+    when: POST <action>
+    then: 409 invalid_transition and the record is unchanged
+  - id: AC-5
+    given: <a record>, reviewer persona
+    when: POST <action> with <invalid body, e.g. reason "" or "   ">
+    then: 422 validation_error and the record is unchanged
+  - id: AC-6
+    given: an action succeeded
+    when: the database is reopened (new connection / app restart)
+    then: the new value is still present
+  - id: AC-7
+    given: an action succeeded
+    then: exactly one new audit event exists with previous/new value, actor id + name, reason, timestamp
+  - id: AC-8
+    given: viewer persona (or missing / unknown persona header)
+    when: POST any action
+    then: 403 forbidden and the record is unchanged
+  - id: AC-9
+    kind: regression
+    then: all existing app tests still pass unchanged
+  - id: AC-10
+    kind: browser
+    then:
+      - list loads through the API
+      - search and filters work
+      - detail panel opens and its URL survives a reload
+      - <happy-path action> with a reason persists across refresh and backend restart
+      - the new audit entry is shown
+      - viewer sees no write controls and the backend rejects a forced request (403)
+
+non_goals:
+  - real identity provider or SSO
+  - <integration this tool does NOT do, e.g. real payment rails>
+  - <workflow this tool does NOT cover, e.g. assignment / approvals>
+  - pagination (<count> records)
