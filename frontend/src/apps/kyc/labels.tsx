@@ -23,13 +23,6 @@ export function RiskPill({ risk }: { risk: RiskLevel }) {
   return <StatusBadge tone={riskTone[risk]} label={`${riskLabel[risk]} risk`} />
 }
 
-export function formatDate(iso: string, withTime = false) {
-  const d = new Date(iso)
-  return withTime
-    ? d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
 export function reviewerName(id: string | null) {
   return id ? reviewerNames[id] ?? id : 'Unassigned'
 }

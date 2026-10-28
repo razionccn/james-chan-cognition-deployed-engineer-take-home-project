@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ApiError } from '@/shared/api/client'
 import { useQuery } from '@/shared/api/useQuery'
 import {
+  AuditTimeline,
   ConfirmDialog,
   DescriptionList,
   DetailPanel,
@@ -102,26 +103,16 @@ export function FlagDetailPanel({ flagId, onClose, onChanged }: { flagId: string
               ]}
             />
             <Section title="Change history">
-              {flag.audit_events.length === 0 ? (
-                <p className="text-sm text-slate-500">No changes recorded for this flag yet.</p>
-              ) : (
-                <ol className="space-y-3">
-                  {flag.audit_events.map((ev) => (
-                    <li key={ev.id} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium text-slate-800">
-                          {ev.action === 'enable' ? 'Enabled' : 'Disabled'} by {ev.actor_name}
-                        </span>
-                        <span className="text-xs text-slate-500">{formatDateTime(ev.created_at)}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {ev.previous_enabled ? 'Enabled' : 'Disabled'} → {ev.new_enabled ? 'Enabled' : 'Disabled'}
-                      </div>
-                      {ev.reason && <p className="mt-1 text-slate-700">{ev.reason}</p>}
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <AuditTimeline
+                emptyText="No changes recorded for this flag yet."
+                entries={flag.audit_events.map((ev) => ({
+                  id: ev.id,
+                  title: `${ev.action === 'enable' ? 'Enabled' : 'Disabled'} by ${ev.actor_name}`,
+                  at: ev.created_at,
+                  change: `${ev.previous_enabled ? 'Enabled' : 'Disabled'} → ${ev.new_enabled ? 'Enabled' : 'Disabled'}`,
+                  reason: ev.reason,
+                }))}
+              />
             </Section>
           </>
         )}

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
+import { useDebounced, useUrlParam } from '@/shared/hooks'
 import { Button, DataTable, ErrorState, FilterBar, PageHeader, SearchInput, SelectFilter, type Column } from '@/shared/components'
 import { formatDateTime } from '@/shared/format'
 import { featureFlagsApi } from './api'
@@ -10,18 +10,8 @@ import type { FeatureFlag, FlagFilters } from './types'
 
 const EMPTY: FlagFilters = { q: '', environment: '', enabled: '' }
 
-function useDebounced<T>(value: T, ms: number) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return debounced
-}
-
 export function FeatureFlagsPage() {
-  const [params, setParams] = useSearchParams()
-  const selectedId = params.get('flag')
+  const [selectedId, select] = useUrlParam('flag')
   const [filters, setFilters] = useState<FlagFilters>(EMPTY)
   const debouncedQ = useDebounced(filters.q, 250)
 
@@ -48,13 +38,6 @@ export function FeatureFlagsPage() {
     { key: 'updated', header: 'Last updated', render: (r) => <span className="text-slate-500">{formatDateTime(r.updated_at)}</span> },
     { key: 'updated_by', header: 'Updated by', render: (r) => r.updated_by },
   ]
-
-  function select(id: string | null) {
-    const next = new URLSearchParams(params)
-    if (id) next.set('flag', id)
-    else next.delete('flag')
-    setParams(next, { replace: false })
-  }
 
   return (
     <div className="space-y-5">

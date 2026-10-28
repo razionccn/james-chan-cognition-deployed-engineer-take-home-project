@@ -1,27 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@/shared/api/useQuery'
+import { useDebounced, useUrlParam } from '@/shared/hooks'
 import { Button, DataTable, ErrorState, FilterBar, PageHeader, SearchInput, SelectFilter, type Column } from '@/shared/components'
 import { kycApi } from './api'
 import { CaseDetailPanel } from './CaseDetailPanel'
-import { RiskPill, StatusPill, formatDate, reviewerName, riskLabel, statusLabel } from './labels'
+import { formatDate, formatDateTime } from '@/shared/format'
+import { RiskPill, StatusPill, reviewerName, riskLabel, statusLabel } from './labels'
 import type { CaseFilters, KycCaseSummary } from './types'
 
 const statusOptions = (Object.keys(statusLabel) as Array<keyof typeof statusLabel>).map((v) => ({ value: v, label: statusLabel[v] }))
 const riskOptions = (Object.keys(riskLabel) as Array<keyof typeof riskLabel>).map((v) => ({ value: v, label: riskLabel[v] }))
 
-function useDebounced<T>(value: T, ms: number) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return debounced
-}
-
 export function KycQueuePage() {
-  const [params, setParams] = useSearchParams()
-  const selectedId = params.get('case')
+  const [selectedId, select] = useUrlParam('case')
   const [filters, setFilters] = useState<CaseFilters>({ q: '', status: '', risk_level: '' })
   const debouncedQ = useDebounced(filters.q, 250)
 
@@ -49,15 +40,8 @@ export function KycQueuePage() {
     { key: 'status', header: 'Status', render: (r) => <StatusPill status={r.status} /> },
     { key: 'submitted', header: 'Submitted', render: (r) => formatDate(r.submitted_at) },
     { key: 'reviewer', header: 'Assigned reviewer', render: (r) => <span className={r.assigned_reviewer ? '' : 'text-slate-400'}>{reviewerName(r.assigned_reviewer)}</span> },
-    { key: 'updated', header: 'Last updated', render: (r) => <span className="text-slate-500">{formatDate(r.updated_at, true)}</span> },
+    { key: 'updated', header: 'Last updated', render: (r) => <span className="text-slate-500">{formatDateTime(r.updated_at)}</span> },
   ]
-
-  function select(id: string | null) {
-    const next = new URLSearchParams(params)
-    if (id) next.set('case', id)
-    else next.delete('case')
-    setParams(next, { replace: false })
-  }
 
   return (
     <div className="space-y-5">
