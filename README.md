@@ -1,13 +1,13 @@
-# Fintech Operations Console — Internal Tool Development Template + KYC Review Queue
+# Fintech Operations Console — Internal Tools Template + KYC Review Queue
 
 Proof of concept for a Cognition Deployed Engineer case study: a repeatable
-**Internal Tool Development Template** (the "Golden Path" in the case brief) for building
+**Internal Tools Template** for building
 internal business tools with Devin, and a working KYC review application built by following it.
 
-> Status: **Internal Tool Development Template foundation** (this PR). The KYC application follows in PR #2
+> Status: **Internal Tools Template foundation** (this PR). The KYC application follows in PR #2
 > and this README will be expanded with full run/test/limitations/evidence sections.
 
-## Internal Tool Development Template in one glance
+## Internal Tools Template in one glance
 
 | Piece | Where |
 |---|---|

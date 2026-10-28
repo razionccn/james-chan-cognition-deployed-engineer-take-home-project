@@ -68,7 +68,15 @@ def init_db(conn: sqlite3.Connection, *, seed: bool = False, reset: bool = False
         conn.executescript(module.SCHEMA_SQL)
         log.append(f"[{module.APP_ID}] schema ensured ({len(module.TABLES)} tables)")
         if seed:
-            inserted = module.seed(conn)
-            log.append(f"[{module.APP_ID}] seeded {inserted} records")
+            first_table = module.TABLES[-1] if module.TABLES else None
+            existing = conn.execute(f"SELECT COUNT(*) FROM {first_table}").fetchone()[0] if first_table else 0
+            if existing:
+                log.append(
+                    f"[{module.APP_ID}] skipped seeding: {first_table} already has {existing} rows "
+                    "(use --reset --seed to reseed)"
+                )
+            else:
+                inserted = module.seed(conn)
+                log.append(f"[{module.APP_ID}] seeded {inserted} records")
     conn.commit()
     return log

@@ -1,3 +1,4 @@
+import logging
 """Shared error type for business-rule and authorization failures.
 
 Services raise AppError; the FastAPI layer turns it into a JSON response of the
@@ -6,6 +7,7 @@ same way and the frontend can render them uniformly.
 """
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
@@ -48,4 +50,24 @@ def install_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": {"code": exc.code, "message": exc.message}},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def _request_validation_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+        """Render FastAPI/Pydantic request errors in the same envelope as AppError."""
+        parts = []
+        for err in exc.errors():
+            loc = ".".join(str(x) for x in err.get("loc", []) if x not in ("body", "query", "path"))
+            parts.append(f"{loc}: {err.get('msg')}" if loc else str(err.get("msg")))
+        return JSONResponse(
+            status_code=422,
+            content={"error": {"code": "validation_error", "message": "; ".join(parts) or "Invalid request."}},
+        )
+
+    @app.exception_handler(Exception)
+    async def _unexpected_error_handler(_: Request, exc: Exception) -> JSONResponse:
+        logging.getLogger("app").exception("Unhandled error", exc_info=exc)
+        return JSONResponse(
+            status_code=500,
+            content={"error": {"code": "internal_error", "message": "Unexpected server error."}},
         )
