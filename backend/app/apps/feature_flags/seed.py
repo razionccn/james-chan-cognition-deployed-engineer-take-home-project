@@ -32,32 +32,35 @@ _ROWS += [
     ("risk.velocity_limits", "Per-customer transaction velocity limits enforced at authorization time.", "staging", True, "Ana Okafor", 2),
 ]
 
-# Historical audit events: (flag_name, environment, previous, new, actor_id, actor_name, reason, days_ago)
-_HISTORY: list[tuple[str, str, bool, bool, str, str, str, int]] = [
-    ("checkout.new_payment_form", "staging", False, True, "ben.reviewer", "Ben Castillo", "Enable for QA regression run.", 5),
-    ("payments.realtime_rails", "staging", False, True, "ben.reviewer", "Ben Castillo", "Pilot with the payments team.", 5),
-    ("risk.velocity_limits", "staging", False, True, "ana.reviewer", "Ana Okafor", "Verify limits against synthetic traffic.", 2),
+# Historical audit events: (flag_name, environment, previous, new, actor_id, actor_name, reason).
+# Each one is the flag's latest change, so it is stamped with that flag's updated_at.
+_HISTORY: list[tuple[str, str, bool, bool, str, str, str]] = [
+    ("checkout.new_payment_form", "staging", False, True, "ben.reviewer", "Ben Castillo", "Enable for QA regression run."),
+    ("payments.realtime_rails", "staging", False, True, "ben.reviewer", "Ben Castillo", "Pilot with the payments team."),
+    ("risk.velocity_limits", "staging", False, True, "ana.reviewer", "Ana Okafor", "Verify limits against synthetic traffic."),
 ]
 
 
 def seed(conn: sqlite3.Connection) -> int:
     ids: dict[tuple[str, str], str] = {}
+    updated_at: dict[str, datetime] = {}
     for index, (name, description, environment, enabled, updated_by, days_ago) in enumerate(_ROWS):
         flag_id = f"FF-{1001 + index}"
         ids[(name, environment)] = flag_id
         updated = BASE + timedelta(days=20 - days_ago, hours=index % 5)
+        updated_at[flag_id] = updated
         conn.execute(
             """INSERT INTO feature_flags (id, name, description, environment, enabled, updated_at, updated_by)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (flag_id, name, description, environment, int(enabled), _iso(updated), updated_by),
         )
-    for name, environment, previous, new, actor_id, actor_name, reason, days_ago in _HISTORY:
-        acted_at = BASE + timedelta(days=20 - days_ago)
+    for name, environment, previous, new, actor_id, actor_name, reason in _HISTORY:
+        flag_id = ids[(name, environment)]
         conn.execute(
             """INSERT INTO feature_flag_audit_events
                    (flag_id, action, previous_enabled, new_enabled, actor_id, actor_name, reason, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (ids[(name, environment)], "enable" if new else "disable", int(previous), int(new),
-             actor_id, actor_name, reason, _iso(acted_at)),
+            (flag_id, "enable" if new else "disable", int(previous), int(new),
+             actor_id, actor_name, reason, _iso(updated_at[flag_id])),
         )
     return len(_ROWS)
