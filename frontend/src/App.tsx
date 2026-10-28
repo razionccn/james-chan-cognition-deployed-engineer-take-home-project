@@ -119,7 +119,10 @@ export default function App() {
     } catch (e) {
       const err = e as ApiError
       setDialogError(err.message)
-      if (err.status === 409 || err.status === 404) setDetailVersion((v) => v + 1)
+      if (err.status === 409 || err.status === 404) {
+        setDetailVersion((v) => v + 1)
+        setListVersion((v) => v + 1)
+      }
     } finally {
       setSubmitting(false)
     }
