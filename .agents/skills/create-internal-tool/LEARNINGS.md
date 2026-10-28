@@ -54,3 +54,13 @@ Also found by the exhaustive matrix tests: `q=%` matched everything (LIKE wildca
 write rule-matrix tests (every state × action × persona) for app #3 from the start — they are cheap and found a real bug.
 Still open: `DetailPanel` focus trap; sub-second timestamps; form primitives; per-app roles; Playwright; formal spec schema validator.
 
+## template — 2026-10-28 — control runs without the template (no new app; `docs/FEATURE_FLAG_BASELINE_METRICS.md`)
+Two fresh sessions built the Feature-Flag app from the same spec with no template, Skill or shared code.
+What this says about the template: both controls re-implemented the same ~10 pieces (db/transaction, error envelope,
+personas, time helpers, confirm dialog, toast, states, API client, persona switcher, URL state) — the shared layer is the
+right cut. The clean control rediscovered two bugs the template fixed in PR #7 (Escape closing dialog + panel; stale list row
+after a 409): a Skill build inherits those fixes, a from-scratch build does not — keep shared-component regression tests, they
+are the template's quality moat. Spec → green build: 2 min 29 s on the template vs 7 min 03 s / 7 min 20 s without.
+Experiment gotcha: a session with the repo attached gets `AGENTS.md` injected even after deleting the clone; a clean control
+needs no repository attached, and the spec copy must drop its `# Consumed by the … Skill` header.
+

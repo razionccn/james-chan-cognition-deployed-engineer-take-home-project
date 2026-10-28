@@ -124,3 +124,5 @@ Per-app roles (C-5); form primitives (`TextField`, `SelectField`) — still abse
 Not done (P2): per-app roles, form primitives, Playwright smoke test. Spec JSON-Schema is partly covered since PR #6 by
 `specs/TEMPLATE.yaml` + `specs/README.md` and the parse/section check in `test_core` (D-3); a formal schema validator is still open.
 PR #7 later added the record-identity convention, exhaustive rule-matrix tests and the LIKE-escaping fix (see implementation log, milestone 7).
+PR #9 added the control group this audit lacked: two no-template builds of the same tool (`docs/FEATURE_FLAG_BASELINE_METRICS.md`) —
+the template's measured effect is −65 % time to a green build and about half the code; the clean control rediscovered two PR #7 bugs.

@@ -29,7 +29,8 @@ structured spec by following a written procedure** — not by free-form promptin
 - The **KYC Review Queue** is the representative tool: queue, filters, case detail, approve / reject /
   escalate with mandatory reason, backend-enforced transitions and roles, persisted audit trail.
 - The **template** is what makes tool #2..#13 cheap: the spec format, the repository rules, the
-  Devin Skill, and the shared components/services the KYC app reuses.
+  Devin Skill, and the shared components/services the KYC app reuses. Measured on tool #2 (§8): with a
+  spec in hand, 2½ min to a green build on the template vs ~7 min from scratch, with half the code written.
 
 ## 2. How Devin was used
 
@@ -41,6 +42,11 @@ structured spec by following a written procedure** — not by free-form promptin
    backend module, frontend module, one pytest per acceptance criterion.
 4. Devin Review ran on the PRs; its findings (a YAML syntax error in the spec, a stale-reason bug in
    `ConfirmDialog`, keyboard accessibility of table rows) were fixed in-session. See `docs/IMPLEMENTATION_LOG.md`.
+5. Repeatability test — a deliberately fresh session built the **Feature-Flag Admin Panel** from
+   `specs/feature_flags.yaml` by following the Skill ([PR #5](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/5),
+   metrics in `docs/FEATURE_FLAG_BUILD_METRICS.md`), then two fresh sessions built the same tool *without*
+   the template as a control ([PR #9](https://github.com/razionccn/james-chan-cognition-deployed-engineer-take-home-project/pull/9),
+   `docs/FEATURE_FLAG_BASELINE_METRICS.md`). The audit, spec kit and record-safety work that followed are PRs #5–#7.
 
 ## 3. Architecture
 
@@ -153,6 +159,8 @@ changes to KYC. Measurements, what went wrong and what the template did *not* he
 - **No security or compliance certification**, no rate limiting, no CSRF/CORS hardening beyond localhost.
 - **No deployment, monitoring, backups or migrations.** SQLite file on disk; schema is `CREATE TABLE IF NOT EXISTS` only.
 - **No evidence of long-term cost savings.** This shows build feasibility and repeatability, not TCO.
+- **The speed-up evidence is thin.** One template run vs two control runs, same model, spec written under
+  template conventions; the first control saw `AGENTS.md`. Read `docs/FEATURE_FLAG_BASELINE_METRICS.md` §5 before quoting −65 %.
 - **Concurrency is prototype-grade.** Writes are conditional (`UPDATE … WHERE status = ?`) inside a write-locked transaction, so two reviewers acting on the same record at once get one success and one 409 — but there is no `expected_status` in the API and no idempotency keys.
 
 ## 8. Implementation evidence
