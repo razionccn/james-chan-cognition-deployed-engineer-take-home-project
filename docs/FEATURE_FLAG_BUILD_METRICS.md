@@ -160,7 +160,7 @@ uninterrupted agent run; there was no human in the loop between the task message
 | User correction prompts | **0** (single task message; no follow-up from the user before this report) | conversation |
 | Human review time | **NOT MEASURED** (PR not yet reviewed when this report was written) | — |
 | Model generation vs. tool execution time split | **NOT MEASURED** (no instrumentation) | — |
-| Comparable no-template baseline | **NOT MEASURED in this run** — measured afterwards by two control runs in `docs/FEATURE_FLAG_BASELINE_METRICS.md` (spec → first green build 7 min 03 s / 7 min 20 s vs 2 min 29 s here) | — |
+| Comparable no-template baseline | **NOT MEASURED in this run** — measured afterwards by a control run in `docs/FEATURE_FLAG_BASELINE_METRICS.md` (spec → first green build 7 min 20 s vs 2 min 29 s here) | — |
 
 Caveat: the brief's time budget is "about two hours" for the whole prototype including KYC. The KYC build
 time is not in this repository's history in a measurable form, so the two apps are not compared.
@@ -328,7 +328,7 @@ Browser evidence = recorded testing-agent runs at `085d208` (full checklist) and
 **Limitations of the experiment**
 
 - Single run, single agent, no control group *in this report*: nothing here proves the template is faster than no template.
-  Two control runs were added later (`docs/FEATURE_FLAG_BASELINE_METRICS.md`); read their caveats before quoting a ratio.
+  A control run was added later (`docs/FEATURE_FLAG_BASELINE_METRICS.md`); read its caveats before quoting a ratio.
 - Timings are wall-clock on a VM, dominated by model generation; they are not comparable to human engineering hours.
 - The second app is close in shape to the first (a table of records with an audited, role-gated state change).
   A tool needing forms, file upload, charts, multi-step wizards or cross-app joins would stress parts of the
@@ -355,7 +355,7 @@ Yes, within a defined scope. What the experiment establishes, with evidence in t
 
 What remains unproven:
 
-- Speed relative to building without the template (NOT MEASURED here — see the later control runs in `docs/FEATURE_FLAG_BASELINE_METRICS.md`).
+- Speed relative to building without the template (NOT MEASURED here — see the later control run in `docs/FEATURE_FLAG_BASELINE_METRICS.md`).
 - Generality beyond "audited, role-gated list + detail + state change" tools; the template is still shaped by the KYC
   workflow (mandatory reasons, button actions, global reviewer/viewer roles).
 - Scaling of the duplicated patterns (audit table, labels, debounced filters): at two apps they are tolerable; at
