@@ -360,3 +360,16 @@ What remains unproven:
 - Scaling of the duplicated patterns (audit table, labels, debounced filters): at two apps they are tolerable; at
   three they should be promoted to shared code, which is maintenance the owning team inherits along with the persona
   fixture replacement, SQLite → Postgres migration, and the absence of frontend tests and CI.
+
+---
+
+## H. Post-review fixes (after the PR was opened; not included in the measurements above)
+
+Devin Review on PR head `7c410ea` reported four findings. Triage, with evidence:
+
+| Finding | Outcome | Evidence / reasoning |
+|---|---|---|
+| Concurrent toggles can return 500 instead of 409 | **Fixed** in `backend/app/core/db.py` (shared, 1 statement): `transaction()` now issues `BEGIN IMMEDIATE`. Reproduced first: with deferred `BEGIN`, a competing commit between the read and the `UPDATE` raised `sqlite3.OperationalError: database is locked`. After the fix the competing writer waits (`busy_timeout`) and the first toggle completes; 28 tests still pass. This was a latent template bug that KYC shares; the existing `test_concurrent_conflicting_*` tests use one connection and could not see it. | repro script run in session; `pytest` → `28 passed` |
+| Rapid toggles within one second share an `updated_at` | **Dismissed** — `_now()` has second precision by the template convention copied from KYC; audit order is `created_at DESC, id DESC`, so ordering and the audit trail are unaffected. No wrong result identified. | code inspection |
+| Seeded flag `updated_at` later than its last audit event | **Fixed** in `seed.py`: history rows are stamped with the flag's own `updated_at`. Verified: all 3 seeded events equal their flag's `updated_at`. | query in session |
+| Spec file `specs/feature-flags.yaml` vs `app.id: feature_flags` (`specs/<app_id>.yaml` convention) | **Escalated** — the task brief explicitly named the file `specs/feature-flags.yaml`; renaming to `specs/feature_flags.yaml` would follow the repo convention but contradict the brief. Decision left to the owner. | `AGENTS.md`, Skill step 1 |

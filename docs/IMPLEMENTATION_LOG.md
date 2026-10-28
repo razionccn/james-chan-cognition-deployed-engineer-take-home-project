@@ -132,3 +132,9 @@ no optional reason field because `ConfirmDialog` only rendered it when required.
 
 Known limitations: simulated personas (not auth); no app-scoped roles; audit table/timeline duplicated from KYC
 by convention rather than shared; no frontend tests / CI; concurrency guard tested with a simulated stale read only.
+
+Post-review (Devin Review on PR #5): `transaction()` in `core/db.py` switched to `BEGIN IMMEDIATE` after reproducing a
+`database is locked` 500 when a competing write committed between the read and the conditional `UPDATE` (affects KYC
+too); seed audit timestamps aligned with the flags' `updated_at`. `pytest` → **28 passed**. Spec filename
+(`feature-flags.yaml` vs `<app_id>.yaml`) escalated to the owner because the brief named the file explicitly.
+
