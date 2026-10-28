@@ -3,7 +3,7 @@
 Concise record of what was built, in order, so the work can be shown accurately.
 Times are approximate wall-clock from the start of the session.
 
-## Milestone 1 — Internal Tool Development Template foundation (PR #1)
+## Milestone 1 — Internal Tools Template foundation (PR #1)
 
 **Goal:** establish the minimum reusable foundation before writing any KYC-specific code.
 

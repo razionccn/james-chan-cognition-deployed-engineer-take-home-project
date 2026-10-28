@@ -1,7 +1,7 @@
-# Fintech Operations Console — Internal Tool Development Template + KYC Review Queue
+# Fintech Operations Console — Internal Tools Template + KYC Review Queue
 
 Proof of concept for a Cognition Deployed Engineer case study: a repeatable
-**Internal Tool Development Template** (the "Golden Path" in the case brief) for building
+**Internal Tools Template** for building
 internal business tools with Devin, and a working **KYC Review Queue** built by following it.
 
 The chain it demonstrates:
@@ -61,7 +61,7 @@ Key decisions
 
 ## 4. Running locally
 
-Prerequisites: Python 3.10+, Node 20+ (tested with Python 3.10 / Node 22 / npm 10).
+Prerequisites: Python 3.10+, Node 20+ (tested with Python 3.10 / Node 20 / npm 10).
 
 ```bash
 # backend

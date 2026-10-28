@@ -5,7 +5,7 @@ Scope: code as of this branch (`devin/kyc-review-app`, PR #2 stacked on PR #1). 
 executed or observed in this session; nothing is inferred from intent.
 
 **Terminology:** this document uses **Internal Tools Template**. The repository currently uses *three* names —
-"Internal Tool Development Template" (README, AGENTS.md, log), "Golden Path" (README line 4 parenthetical, branch
+"Internal Tools Template" (README, AGENTS.md, log), "Internal Tools Template" (README line 4 parenthetical, branch
 `devin/golden-path-foundation`, early commit messages) and now "Internal Tools Template" (this file). Unify (see P0-1).
 
 ---
@@ -23,7 +23,7 @@ executed or observed in this session; nothing is inferred from intent.
 **Top three concerns**
 1. **The template cannot yet express or render an "edit a record" tool.** Spec `pages.elements` are free-text strings; there is no field/form section and no shared form inputs. The Feature-Flag panel is exactly that shape.
 2. **Audit logging is per-app, not a template capability.** `kyc_audit_events` + the insert live in the KYC module. App #2 will copy-paste ~40 lines and a schema; app #10 will have ten audit tables with drifting columns.
-3. **Credibility nits that a VP will notice:** three names for the template, "Golden Path" still in the README, `specs/kyc-review.yaml` referenced in two docstrings, README says Node 22 (machine ran Node 20.20.2), `--seed` without `--reset` throws a traceback.
+3. **Credibility nits that a VP will notice:** three names for the template, "Internal Tools Template" still in the README, `specs/kyc-review.yaml` referenced in two docstrings, README says Node 22 (machine ran Node 20.20.2), `--seed` without `--reset` throws a traceback.
 
 ---
 
@@ -118,7 +118,7 @@ Severity: **High** = undermines demo credibility/correctness; **Med** = visible 
 | Low | `role="button"` on `<tr>` breaks table semantics for screen readers. | `DataTable.tsx:75` | Drop `role`, keep `tabIndex`/key handling, or put a button in the first cell (~10 min) |
 | Low | Unexpected exceptions return FastAPI's plain-text 500, not the envelope. | K | Generic handler returning `{"error":{"code":"internal_error"}}`, log server-side (~10 min) |
 | Low | `reviewerNames` duplicated in `apps/kyc/labels.tsx`; drifts from `core/personas.py`. | grep | Read names from `PersonaContext` (`/api/personas`) (~10 min) |
-| Low | Stale references to `specs/kyc-review.yaml` in `tests/test_kyc.py:1` and `apps/kyc/rules.py:1`; README says "Node 22" (actual 20.20.2); three template names; "Golden Path" in README + branch name. | grep | Docs sweep (~15 min) |
+| Low | Stale references to `specs/kyc-review.yaml` in `tests/test_kyc.py:1` and `apps/kyc/rules.py:1`; README says "Node 22" (actual 20.20.2); three template names; "Internal Tools Template" in README + branch name. | grep | Docs sweep (~15 min) |
 
 Checked and **not** an issue: SQL injection (all values parameterised; the only f-strings interpolate constant
 clauses/table names from code), hardcoded secrets (none), sensitive data (synthetic only), frontend-only auth (backend
@@ -138,7 +138,7 @@ exception), CORS (localhost origins only), `X-Demo-User` fallback (unknown → v
 ### P0 — fix before recording the Loom (≈ 1–1.5 h total)
 | # | Task | Effort | Why |
 |---|---|---|---|
-| P0-1 | Unify naming to **Internal Tools Template** across README, AGENTS.md, Skill, log, PR titles; remove the "Golden Path" parenthetical or keep exactly one, clearly labelled as the brief's term; rename branch on next PR | 15 min | Three names in one repo reads as unfinished |
+| P0-1 | Unify naming to **Internal Tools Template** across README, AGENTS.md, Skill, log, PR titles; remove the "Internal Tools Template" parenthetical or keep exactly one, clearly labelled as the brief's term; rename branch on next PR | 15 min | Three names in one repo reads as unfinished |
 | P0-2 | Fix stale `kyc-review.yaml` docstrings; correct Node version claim; add `--seed` guard with hint | 15 min | README/CLI accuracy is the first thing a reviewer tries |
 | P0-3 | `RequestValidationError` → error envelope (and generic 500 handler) | 15 min | Otherwise the "uniform error handling" claim is false for the most common 422 |
 | P0-4 | Close the TOCTOU race (`UPDATE … WHERE status=?`, 409 on `rowcount==0`) + one test with two sequential conflicting writes through the service | 20 min | "Backend enforces transitions" must hold under concurrency for a fintech audience |
