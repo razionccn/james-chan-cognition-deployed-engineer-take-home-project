@@ -2,13 +2,9 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-BASE = datetime(2026, 10, 1, 9, 0, tzinfo=timezone.utc)
-
-
-def _iso(dt: datetime) -> str:
-    return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+from app.core.time import SEED_EPOCH as BASE, to_iso
 
 
 # (name, description)
@@ -52,7 +48,7 @@ def seed(conn: sqlite3.Connection) -> int:
         conn.execute(
             """INSERT INTO feature_flags (id, name, description, environment, enabled, updated_at, updated_by)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (flag_id, name, description, environment, int(enabled), _iso(updated), updated_by),
+            (flag_id, name, description, environment, int(enabled), to_iso(updated), updated_by),
         )
     for name, environment, previous, new, actor_id, actor_name, reason in _HISTORY:
         flag_id = ids[(name, environment)]
@@ -61,6 +57,6 @@ def seed(conn: sqlite3.Connection) -> int:
                    (flag_id, action, previous_enabled, new_enabled, actor_id, actor_name, reason, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (flag_id, "enable" if new else "disable", int(previous), int(new),
-             actor_id, actor_name, reason, _iso(updated_at[flag_id])),
+             actor_id, actor_name, reason, to_iso(updated_at[flag_id])),
         )
     return len(_ROWS)

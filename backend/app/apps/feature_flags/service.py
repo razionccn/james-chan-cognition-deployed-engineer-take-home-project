@@ -2,19 +2,16 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
 from typing import Any
 
 from app.core.db import transaction
 from app.core.errors import ForbiddenError, InvalidTransitionError, NotFoundError, ValidationError
 from app.core.personas import Persona, require_role
+from app.core.time import utc_now_iso
 
 from . import repository
 from .rules import ENVIRONMENTS, TOGGLE_ROLES, is_editable
 
-
-def _now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _validate_environment(value: str | None) -> str | None:
@@ -54,7 +51,7 @@ def toggle_flag(conn: sqlite3.Connection, *, flag_id: str, enabled: bool, reason
     # BR-2: authorization first, so viewers get 403 even for unknown or locked flags.
     require_role(persona, *TOGGLE_ROLES)  # type: ignore[arg-type]
     cleaned_reason = (reason or "").strip()
-    now = _now()
+    now = utc_now_iso()
 
     # BR-4: read, rule checks, conditional update and audit event in one transaction.
     with transaction(conn):

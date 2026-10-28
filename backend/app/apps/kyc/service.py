@@ -2,19 +2,16 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
 from typing import Any
 
 from app.core.db import transaction
 from app.core.errors import ForbiddenError, InvalidTransitionError, NotFoundError, ValidationError
 from app.core.personas import Persona, require_role
+from app.core.time import utc_now_iso
 
 from . import repository
 from .rules import ACTIONS, RISK_LEVELS, STATUSES, allowed_actions, next_status
 
-
-def _now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _validate_filter(name: str, value: str | None, allowed: tuple[str, ...]) -> str | None:
@@ -63,7 +60,7 @@ def apply_review_action(
     if not cleaned_reason:
         raise ValidationError("A reason is required for every review action.")
 
-    now = _now()
+    now = utc_now_iso()
     # BR-4: read, transition check, status update and audit event in one transaction.
     with transaction(conn):
         # BR-5
