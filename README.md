@@ -52,14 +52,15 @@ frontend/  React 18 + TypeScript + Vite + Tailwind      ──/api──▶  bac
 |---|---|---|
 | Spec | `specs/<app_id>.yaml` | Source of truth per tool |
 | Repo instructions | `AGENTS.md` | Architecture rules, conventions, run/test commands |
-| Devin Skill | `.agents/skills/create-internal-tool/SKILL.md` | 9-step procedure: read spec → inspect → reuse → implement → test → run → fix → summarise |
-| Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `registry.py` |
+| Devin Skill | `.agents/skills/create-internal-tool/SKILL.md` + `LEARNINGS.md` | 10-step procedure: read spec → inspect → reuse → implement → test → run → fix → summarise → retrospective |
+| Backend core | `backend/app/core/` | `db.py` (connection, `transaction()`, `init_db`), `errors.py` (uniform error envelope), `personas.py` (dev-only roles), `time.py` (timestamps), `registry.py` |
 | Backend apps | `backend/app/apps/kyc/`, `backend/app/apps/feature_flags/` | `router → service → repository`, `schema.py`, `seed.py`, `rules.py`, `schemas.py` |
-| Frontend shared | `frontend/src/shared/` | `AppShell`, `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toggle`, `Toast`, states, `api` client, `useQuery` |
+| Frontend shared | `frontend/src/shared/` | `components/` (see `index.ts`: `DataTable`, `FilterBar`, `StatusBadge`, `DetailPanel`, `ConfirmDialog`, `Toggle`, `AuditTimeline`, `Toast`, states…), `hooks.ts`, `format.ts`, `api/`, `persona/`, `layout/AppShell` |
 | Frontend apps | `frontend/src/apps/kyc/`, `frontend/src/apps/feature_flags/` | `KycQueuePage` + `CaseDetailPanel`; `FeatureFlagsPage` + `FlagDetailPanel`; typed `api.ts` each |
 | Tests | `backend/tests/` | `conftest.py` (seeded temp DB + TestClient), `test_core.py`, `test_kyc.py`, `test_feature_flags.py` |
 | Log | `docs/IMPLEMENTATION_LOG.md` | Milestones, decisions, assumptions, actual test output |
 | Metrics | `docs/FEATURE_FLAG_BUILD_METRICS.md` | Baseline vs. final line counts, elapsed time, reuse, per-AC verification and skeptical evaluation of the second app |
+| Audits | `AUDIT.md` (after app #1), `docs/TEMPLATE_AUDIT.md` (after app #2) | Skeptical reviews with scores, evidence and prioritised fixes; `TEMPLATE_AUDIT.md` §H lists what was applied |
 
 Key decisions
 - **Business rules live only in the backend** (`service.py`). The UI hides disallowed actions for UX, but every rule is re-checked server-side.
@@ -75,7 +76,7 @@ Prerequisites: Python 3.10+, Node 20+ (tested with Python 3.10 / Node 20 / npm 1
 # backend
 cd backend
 pip install -r requirements.txt
-python -m app.cli init-db --reset --seed          # creates backend/data/console.db with 24 synthetic cases
+python -m app.cli init-db --reset --seed          # creates backend/data/console.db (24 KYC cases, 14 flags)
 uvicorn app.main:app --reload --port 8000         # http://localhost:8000/api/health
 
 # frontend (second terminal)
@@ -158,13 +159,13 @@ changes to KYC. Measurements, what went wrong and what the template did *not* he
 - **No security or compliance certification**, no rate limiting, no CSRF/CORS hardening beyond localhost.
 - **No deployment, monitoring, backups or migrations.** SQLite file on disk; schema is `CREATE TABLE IF NOT EXISTS` only.
 - **No evidence of long-term cost savings.** This shows build feasibility and repeatability, not TCO.
-- Single-user assumptions: no optimistic locking; two reviewers acting on the same case at once get last-write-wins (the audit trail still records both).
+- **Concurrency is prototype-grade.** Writes are conditional (`UPDATE … WHERE status = ?`) inside a write-locked transaction, so two reviewers acting on the same record at once get one success and one 409 — but there is no `expected_status` in the API and no idempotency keys.
 
 ## 8. Implementation evidence
 
 What Devin implemented: everything in this repository except the initial README commit.
 
-Tests executed and results (actual output, this session):
+Tests executed when the KYC app was delivered (PR #2; current totals are in §5):
 ```
 backend  $ python -m pytest        → 13 passed, 2 warnings in 0.32s
 frontend $ npm run typecheck       → tsc -b (no errors)
@@ -177,7 +178,7 @@ Corrections made during the session
 - Devin Review on PR #1: spec YAML did not parse (list/map mix, unquoted `enum [...]`) → fixed and validated with `yaml.safe_load`; spec renamed to `specs/kyc.yaml` to match the `specs/<app_id>.yaml` convention; `ConfirmDialog` reset its reason on every open; `DataTable` rows made keyboard-navigable without stealing Enter from nested controls.
 
 Second application (Feature-Flag Admin Panel): built later in a separate fresh session; see
-`docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output (`28 passed`), elapsed time, reuse and the
+`docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output at delivery (`28 passed`), elapsed time, reuse and the
 browser-testing defect it surfaced (optional reason missing from `ConfirmDialog`, fixed).
 
 Not completed / out of scope: production identity, deployment, pagination, Playwright smoke test.
@@ -186,6 +187,6 @@ Not completed / out of scope: production identity, deployment, pagination, Playw
 
 1. Replace personas with an IdP (OIDC) and a policy layer; keep `require_role()` as the enforcement point.
 2. Move from SQLite to Postgres with migrations (Alembic or plain SQL), keeping the `repository.py` boundary.
-3. Add optimistic concurrency (`expected_status` on review actions) and idempotency keys.
+3. Expose optimistic concurrency to clients (`expected_status` on review actions) and add idempotency keys.
 4. Add structured logging/metrics and a Playwright smoke test for the queue flow (CI with pytest + typecheck + Vitest + build exists).
-5. Build a third tool with a different shape (forms, uploads, charts) to test the template beyond audited list + detail + state change; promote the audit table/timeline and filter-state patterns to shared code once a third app repeats them.
+5. Build a third tool with a different shape (forms, uploads, charts) to test the template beyond audited list + detail + state change; promote the per-app audit tables to one shared table once a third app repeats them (the timeline, hooks and timestamp helpers are already shared).

@@ -1,5 +1,9 @@
 # Internal Tools Template — Audit
 
+> **Status:** historical snapshot taken after the first application (KYC, PR #2). P0 items were done in
+> Milestone 4; the second application and the follow-up audit are in `docs/TEMPLATE_AUDIT.md`, which
+> supersedes the open items below. Kept unedited as evidence.
+
 Skeptical staff-engineer review of the template and the KYC Review Queue before any second application is built.
 Scope: code as of this branch (`devin/kyc-review-app`, PR #2 stacked on PR #1). Everything marked PASS below was
 executed or observed in this session; nothing is inferred from intent.
