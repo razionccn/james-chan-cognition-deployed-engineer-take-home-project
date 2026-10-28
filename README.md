@@ -7,13 +7,13 @@ internal business tools with Devin, and two working applications built by follow
 | App | Spec | Route | API | What it does |
 |---|---|---|---|---|
 | **KYC Review Queue** | `specs/kyc.yaml` | `/kyc` | `/api/kyc` | Review queue of 24 synthetic cases; approve / reject / escalate with mandatory reason and audit trail |
-| **Feature-Flag Admin Panel** | `specs/feature-flags.yaml` | `/feature-flags` | `/api/feature_flags` | 14 synthetic flags across development / staging / production; search and filter; reviewer toggles non-production flags with optional reason; production locked; every toggle audited |
+| **Feature-Flag Admin Panel** | `specs/feature_flags.yaml` | `/feature-flags` | `/api/feature_flags` | 14 synthetic flags across development / staging / production; search and filter; reviewer toggles non-production flags with optional reason; production locked; every toggle audited |
 
 The chain it demonstrates, twice:
 
 > Structured spec (`specs/kyc.yaml`) → reusable template (`AGENTS.md`, Skill, shared shell/components/services) → Devin implementation (PR #2) → functional KYC review app → verified behaviour (pytest acceptance tests + browser walkthrough)
 
-> Same template → **fresh** Devin session with only the repository as context (`specs/feature-flags.yaml`) → Feature-Flag Admin Panel → verified behaviour, with measured build metrics in `docs/FEATURE_FLAG_BUILD_METRICS.md`
+> Same template → **fresh** Devin session with only the repository as context (`specs/feature_flags.yaml`) → Feature-Flag Admin Panel → verified behaviour, with measured build metrics in `docs/FEATURE_FLAG_BUILD_METRICS.md`
 
 All data is synthetic. The persona switcher is a development-only fixture, not authentication.
 
@@ -119,7 +119,7 @@ FastAPI app and a real SQLite file (no mocks):
 
 Browser verification (AC-10) was performed end to end (including persistence across a backend restart and backend-enforced 403/409/422); the exact checklist is in `docs/IMPLEMENTATION_LOG.md` and the recording is on PR #2.
 
-`backend/tests/test_feature_flags.py` does the same for `specs/feature-flags.yaml`: list, environment/state
+`backend/tests/test_feature_flags.py` does the same for `specs/feature_flags.yaml`: list, environment/state
 filters and invalid filter → 422, search by name or id, reviewer toggle of a staging flag, production toggle →
 403 `environment_locked`, viewer/missing/unknown persona → 403 `forbidden`, persistence across a new connection
 and a new app instance, exactly one audit event per toggle (previous/new, actor, reason, timestamp), no-op → 409,

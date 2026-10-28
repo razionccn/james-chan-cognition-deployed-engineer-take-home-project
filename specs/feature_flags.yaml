@@ -3,7 +3,7 @@
 # Conventions and shared building blocks are described in AGENTS.md.
 #
 # Naming note: the app_id is `feature_flags` (Python package / API prefix / tables);
-# this file is named `feature-flags.yaml` as requested by the task brief.
+# this file is named `feature_flags.yaml` as requested by the task brief.
 
 app:
   id: feature_flags

@@ -96,12 +96,12 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
 
 Verification: `python -m pytest` → **15 passed**.
 
-## Milestone 5 — Feature-Flag Admin Panel (second app, fresh session, built by following the Skill against `specs/feature-flags.yaml`)
+## Milestone 5 — Feature-Flag Admin Panel (second app, fresh session, built by following the Skill against `specs/feature_flags.yaml`)
 
 Full measurements, timeline and skeptical evaluation: `docs/FEATURE_FLAG_BUILD_METRICS.md`.
 Baseline `0364651` (main) → final code commit `be1f095`. Session: https://app.devin.ai/sessions/929c6363efd14330b0ab305373bc0200
 
-- `specs/feature-flags.yaml`: 14 flags across development / staging / production; AC-1 … AC-10; non-goals (no real
+- `specs/feature_flags.yaml`: 14 flags across development / staging / production; AC-1 … AC-10; non-goals (no real
   provider, no CRUD, no rollouts, no SSO, no pagination).
 - Backend `app/apps/feature_flags/`: `feature_flags` + `feature_flag_audit_events` tables; `GET /meta`, `GET /flags`
   (`q`, `environment`, `enabled`), `GET /flags/{id}` (detail + audit events), `POST /flags/{id}/toggle`
@@ -136,5 +136,5 @@ by convention rather than shared; no frontend tests / CI; concurrency guard test
 Post-review (Devin Review on PR #5): `transaction()` in `core/db.py` switched to `BEGIN IMMEDIATE` after reproducing a
 `database is locked` 500 when a competing write committed between the read and the conditional `UPDATE` (affects KYC
 too); seed audit timestamps aligned with the flags' `updated_at`. `pytest` → **28 passed**. Spec filename
-(`feature-flags.yaml` vs `<app_id>.yaml`) escalated to the owner because the brief named the file explicitly.
+(`feature_flags.yaml` vs `<app_id>.yaml`) escalated to the owner because the brief named the file explicitly.
 

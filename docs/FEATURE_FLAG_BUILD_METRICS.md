@@ -114,7 +114,7 @@ audit logging is per-app (no shared audit table/helper), roles are a global `rev
 defect in the template would invalidate the new app.
 
 Smallest viable implementation decided at baseline:
-- `specs/feature-flags.yaml` with the same sections as `specs/kyc.yaml`.
+- `specs/feature_flags.yaml` with the same sections as `specs/kyc.yaml`.
 - Backend module `backend/app/apps/feature_flags/` (schema with `feature_flags` + `feature_flag_audit_events`,
   deterministic seed of 12 flags, repository, service enforcing: production immutable → 403, viewer → 403,
   unknown flag → 404, no-op toggle → 409; conditional `UPDATE … WHERE enabled = ?` + audit insert in one
@@ -134,7 +134,7 @@ Smallest viable implementation decided at baseline:
 | Item | Value |
 |---|---|
 | Objective | Build a second internal application on the Internal Tools Template in a fresh session, using only repository context, and measure what the template did and did not help with. |
-| Application implemented | **Feature-Flag Admin Panel** (`specs/feature-flags.yaml`, app id `feature_flags`, route `/feature-flags`, API `/api/feature_flags`): list / search / filter 14 seeded flags across development, staging, production; detail panel with change history; reviewer-only toggle of non-production flags with optional reason; production locked; every toggle audited. |
+| Application implemented | **Feature-Flag Admin Panel** (`specs/feature_flags.yaml`, app id `feature_flags`, route `/feature-flags`, API `/api/feature_flags`): list / search / filter 14 seeded flags across development, staging, production; detail panel with change history; reviewer-only toggle of non-production flags with optional reason; production locked; every toggle audited. |
 | Baseline commit | `03646510c301dc0faf2524ae1de5022dfaf4c001` (`main`) |
 | Final code commit (what sections B–E measure) | `be1f095` — `ConfirmDialog: add collectReason prop …`. Documentation-only commits (this report, `docs/IMPLEMENTATION_LOG.md`, `README.md`) follow it; the PR head SHA is on the PR. |
 | Devin session | https://app.devin.ai/sessions/929c6363efd14330b0ab305373bc0200 |
@@ -198,7 +198,7 @@ docstrings, and exclude nothing but the pathspec):
 git diff --shortstat 03646510c301dc0faf2524ae1de5022dfaf4c001 be1f095 -- backend frontend
 #  19 files changed, 975 insertions(+), 5 deletions(-)        (code + tests only)
 git diff --shortstat 03646510c301dc0faf2524ae1de5022dfaf4c001 be1f095
-#  21 files changed, 1278 insertions(+), 5 deletions(-)       (+ specs/feature-flags.yaml and the baseline section of this report)
+#  21 files changed, 1278 insertions(+), 5 deletions(-)       (+ specs/feature_flags.yaml and the baseline section of this report)
 git diff --numstat 03646510c301dc0faf2524ae1de5022dfaf4c001 be1f095 -- backend/app/core frontend/src/shared frontend/src/apps/registry.ts
 #  2  2  backend/app/core/registry.py
 #  8  0  frontend/src/apps/registry.ts
@@ -248,7 +248,7 @@ listed only because the brief asks for the denominator to be explicit.
 - `frontend/src/apps/feature_flags/`: `types.ts`, `api.ts`, `labels.tsx`, `FeatureFlagsPage.tsx`,
   `FlagDetailPanel.tsx` (300 code lines).
 - `backend/tests/test_feature_flags.py` (142 code lines, 13 tests).
-- `specs/feature-flags.yaml`.
+- `specs/feature_flags.yaml`.
 
 **Duplicated or missing patterns (candidates for standardisation, not done here on purpose)**
 
@@ -346,7 +346,7 @@ Yes, within a defined scope. What the experiment establishes, with evidence in t
 - A fresh session with only the repository as context produced a working second application following the Skill,
   with 570 application-specific source lines and **49 lines of template change**, none of which touched KYC
   (`git diff` on KYC paths is empty; the 15 pre-existing tests pass unchanged).
-- Every acceptance criterion in `specs/feature-flags.yaml` is covered by an HTTP-level test against real SQLite,
+- Every acceptance criterion in `specs/feature_flags.yaml` is covered by an HTTP-level test against real SQLite,
   and the browser checklist passed end-to-end including persistence across a real backend restart and backend-enforced
   production lock and viewer rejection.
 - Baseline → first complete build was 8 minutes of wall clock; baseline → verified fix was 16 minutes. The one
@@ -372,4 +372,8 @@ Devin Review on PR head `7c410ea` reported four findings. Triage, with evidence:
 | Concurrent toggles can return 500 instead of 409 | **Fixed** in `backend/app/core/db.py` (shared, 1 statement): `transaction()` now issues `BEGIN IMMEDIATE`. Reproduced first: with deferred `BEGIN`, a competing commit between the read and the `UPDATE` raised `sqlite3.OperationalError: database is locked`. After the fix the competing writer waits (`busy_timeout`) and the first toggle completes; 28 tests still pass. This was a latent template bug that KYC shares; the existing `test_concurrent_conflicting_*` tests use one connection and could not see it. | repro script run in session; `pytest` → `28 passed` |
 | Rapid toggles within one second share an `updated_at` | **Dismissed** — `_now()` has second precision by the template convention copied from KYC; audit order is `created_at DESC, id DESC`, so ordering and the audit trail are unaffected. No wrong result identified. | code inspection |
 | Seeded flag `updated_at` later than its last audit event | **Fixed** in `seed.py`: history rows are stamped with the flag's own `updated_at`. Verified: all 3 seeded events equal their flag's `updated_at`. | query in session |
-| Spec file `specs/feature-flags.yaml` vs `app.id: feature_flags` (`specs/<app_id>.yaml` convention) | **Escalated** — the task brief explicitly named the file `specs/feature-flags.yaml`; renaming to `specs/feature_flags.yaml` would follow the repo convention but contradict the brief. Decision left to the owner. | `AGENTS.md`, Skill step 1 |
+| Spec file `specs/feature_flags.yaml` vs `app.id: feature_flags` (`specs/<app_id>.yaml` convention) | **Escalated** — the task brief explicitly named the file `specs/feature_flags.yaml`; renaming to `specs/feature_flags.yaml` would follow the repo convention but contradict the brief. Decision left to the owner. | `AGENTS.md`, Skill step 1 |
+
+Owner decision on the escalated finding: match the first application — the spec was renamed to `specs/feature_flags.yaml`
+(`<app_id>.yaml`, like `specs/kyc.yaml`) and all references updated. The brief's original filename `specs/feature-flags.yaml`
+is recorded here for the measurement history.
