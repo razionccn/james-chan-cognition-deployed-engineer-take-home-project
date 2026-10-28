@@ -1,0 +1,175 @@
+# Application specification: Feature-Flag Admin Panel
+# Consumed by the `create-internal-tool` Skill (.agents/skills/create-internal-tool/SKILL.md).
+# Conventions and shared building blocks are described in AGENTS.md.
+#
+# Naming note: the app_id is `feature_flags` (Python package / API prefix / tables);
+# this file is named `feature-flags.yaml` as requested by the task brief.
+
+app:
+  id: feature_flags
+  name: Feature-Flag Admin Panel
+  console: Fintech Operations Console
+  purpose: >
+    Let engineers inspect feature flags across the development, staging and
+    production environments, and enable or disable flags in non-production
+    environments through the backend API with a durable audit trail.
+  data_policy: Synthetic flag records only. No real configuration, secrets or external flag service.
+
+roles:
+  - id: reviewer
+    description: >
+      Simulated "permitted engineer". Can view all flags and toggle flags in
+      editable environments. (Reuses the template's existing write role rather
+      than adding a per-app role to backend/app/core/personas.py.)
+  - id: viewer
+    description: Read-only. Can view flags and history but cannot modify anything.
+roles_note: >
+  Roles come from the DEV-ONLY simulated persona header (X-Demo-User). This is
+  not authentication, SSO or an access-control system. See AGENTS.md "Authorization".
+
+data_model:
+  feature_flags:
+    primary_key: id            # e.g. FF-1001
+    fields:
+      id: string
+      name: string                      # dotted key, e.g. checkout.new_payment_form; same name may exist per environment
+      description: string
+      environment: enum [development, staging, production]
+      enabled: boolean
+      updated_at: datetime
+      updated_by: string                # display name of the last actor (seed value or persona name)
+    constraints:
+      - unique (name, environment)
+  feature_flag_audit_events:
+    primary_key: id (autoincrement)
+    fields:
+      flag_id: fk -> feature_flags.id
+      action: enum [enable, disable]
+      previous_enabled: boolean
+      new_enabled: boolean
+      actor_id: string                  # persona id
+      actor_name: string
+      reason: string                    # optional, may be empty
+      created_at: datetime
+
+environments:
+  - id: development
+    editable: true
+  - id: staging
+    editable: true
+  - id: production
+    editable: false                     # locked in this prototype; changes go through a release process (non-goal)
+
+business_rules:
+  - id: BR-1
+    rule: Flags in the `production` environment cannot be modified through the API, regardless of role.
+    on_violation: 403 environment_locked
+  - id: BR-2
+    rule: Only personas with role `reviewer` may toggle a flag; `viewer` (and unknown/missing persona) is rejected.
+    on_violation: 403 forbidden
+  - id: BR-3
+    rule: Setting a flag to the value it already has is rejected (no silent no-op, no empty audit rows).
+    on_violation: 409 invalid_transition
+  - id: BR-4
+    rule: A successful toggle updates `enabled`, `updated_at` and `updated_by`, and inserts exactly one audit event, in the same database transaction, using a conditional update (`WHERE enabled = <previous>`) so concurrent writers cannot both succeed.
+  - id: BR-5
+    rule: Unknown flag ids return 404 not_found.
+  - id: BR-6
+    rule: Invalid `environment` filter values return 422 validation_error; `reason` is optional and at most 500 characters.
+  - id: BR-7
+    rule: All rules above are enforced by the backend; the frontend may additionally hide/disable controls but must never be the only guard.
+
+api:
+  base_path: /api/feature_flags
+  endpoints:
+    - method: GET
+      path: /meta
+      response: { environments: [{id, editable}], roles_that_can_toggle: [reviewer] }
+    - method: GET
+      path: /flags
+      query: { q: "search name or id (case-insensitive substring)", environment: enum, enabled: "true|false" }
+      response: { items: [FeatureFlag], total: int }
+    - method: GET
+      path: /flags/{flag_id}
+      response: FeatureFlagDetail   # flag fields + editable + audit_events (newest first)
+    - method: POST
+      path: /flags/{flag_id}/toggle
+      body: { enabled: boolean, reason: "string (optional)" }
+      auth: role reviewer
+      response: FeatureFlagDetail (updated)
+      errors: [404 not_found, 403 forbidden, 403 environment_locked, 409 invalid_transition, 422 validation_error]
+
+pages:
+  - id: flags
+    route: /feature-flags
+    elements:
+      - search input (flag name or id)
+      - environment filter, state filter (enabled / disabled)
+      - data table with columns: Flag, Description, Environment, State, Last updated, Updated by
+      - row click opens flag detail panel
+      - loading, empty and error states
+  - id: flag_detail
+    route: /feature-flags?flag={id}   # side panel over the list; URL keeps it shareable
+    elements:
+      - header: flag name, id, environment badge, state badge
+      - summary grid: description, environment, state, last updated, updated by
+      - toggle control (shared Toggle), shown enabled only for editable environments and the reviewer role
+      - production flags show a "locked" notice; viewers see a read-only notice
+      - confirmation dialog with optional reason before submitting
+      - success toast after update; backend error message shown inline on failure
+      - audit history list (newest first) with previous -> new state, actor, reason, timestamp
+
+seed_data:
+  count: 14
+  distribution:
+    environment: { development: 5, staging: 5, production: 4 }
+    enabled: mixed (roughly half enabled per environment)
+  requirements:
+    - deterministic (same data every seed) so the demo is repeatable
+    - at least four flag names exist in all three environments so environment filtering is meaningful
+    - a few flags ship with a historical audit event
+
+acceptance_criteria:
+  - id: AC-1
+    given: seeded database
+    when: GET /api/feature_flags/flags
+    then: returns all 14 flags with id, name, description, environment, enabled, updated_at, updated_by
+  - id: AC-2
+    when: GET /api/feature_flags/flags?environment=staging
+    then: only staging flags are returned; an invalid environment returns 422 validation_error
+  - id: AC-3
+    when: GET /api/feature_flags/flags?q=<name fragment>
+    then: only flags whose name or id contains the fragment (case-insensitive) are returned
+  - id: AC-4
+    given: a staging flag, reviewer persona
+    when: POST toggle with the opposite `enabled` value
+    then: 200, enabled flipped, updated_at and updated_by changed
+  - id: AC-5
+    given: a production flag, reviewer persona
+    when: POST toggle
+    then: 403 environment_locked and the flag is unchanged
+  - id: AC-6
+    given: viewer persona (or missing / unknown persona header)
+    when: POST toggle on a staging flag
+    then: 403 forbidden and the flag is unchanged
+  - id: AC-7
+    given: a toggle succeeded
+    when: the database is reopened (new connection / new app instance)
+    then: the new value is still present
+  - id: AC-8
+    given: a toggle succeeded
+    then: exactly one new audit event exists with previous_enabled, new_enabled, actor id + name, reason, timestamp
+  - id: AC-9
+    kind: regression
+    then: all existing KYC tests still pass unchanged
+  - id: AC-10
+    kind: browser
+    then: list loads through the API, search and environment filter work, detail opens, staging toggle persists across refresh and backend restart, audit entry shown, production toggle is disabled in the UI and rejected by the backend, viewer cannot toggle.
+
+non_goals:
+  - real feature-flag service (LaunchDarkly, Unleash, …) or SDK integration
+  - creating / deleting flags, editing names or descriptions
+  - percentage rollouts, targeting rules, scheduling
+  - production change workflow (approvals / release process)
+  - real identity provider or SSO
+  - pagination (14 records)
