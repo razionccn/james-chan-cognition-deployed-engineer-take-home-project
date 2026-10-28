@@ -21,3 +21,6 @@ frontend/node_modules/.tmp/
 .idea/
 .vscode/
 *.log
+
+# Vite
+*.local

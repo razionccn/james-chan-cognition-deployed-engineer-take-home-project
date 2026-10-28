@@ -1,3 +1,4 @@
+import { FeatureFlagsPage } from './feature_flags/FeatureFlagsPage'
 import { KycQueuePage } from './kyc/KycQueuePage'
 import type { ComponentType } from 'react'
 
@@ -23,5 +24,12 @@ export const appRegistry: AppDefinition[] = [
     description: 'Review identity-verification cases: approve, reject or escalate with an audited reason.',
     path: '/kyc',
     Page: KycQueuePage,
+  },
+  {
+    id: 'feature_flags',
+    name: 'Feature-Flag Admin Panel',
+    description: 'Inspect feature flags per environment and toggle non-production flags with an audit trail.',
+    path: '/feature-flags',
+    Page: FeatureFlagsPage,
   },
 ]

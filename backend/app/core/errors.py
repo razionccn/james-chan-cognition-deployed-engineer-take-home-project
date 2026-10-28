@@ -1,10 +1,11 @@
-import logging
 """Shared error type for business-rule and authorization failures.
 
 Services raise AppError; the FastAPI layer turns it into a JSON response of the
 shape {"error": {"code": ..., "message": ...}} so every app returns errors the
 same way and the frontend can render them uniformly.
 """
+
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError

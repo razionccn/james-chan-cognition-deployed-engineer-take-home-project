@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { cx } from './cx'
 import { EmptyState, LoadingState } from './States'
 
+/** One column: `render` receives the whole row so cells can combine fields. */
 export interface Column<Row> {
   key: string
   header: string
@@ -9,6 +10,10 @@ export interface Column<Row> {
   className?: string
 }
 
+/**
+ * Generic list table with loading/empty states, optional row click (keyboard accessible)
+ * and a highlighted `selectedKey` row. Sorting and pagination are intentionally absent.
+ */
 export interface DataTableProps<Row> {
   columns: Column<Row>[]
   rows: Row[]

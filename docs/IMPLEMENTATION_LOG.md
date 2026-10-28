@@ -87,7 +87,8 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
 
 ## Milestone 4 — Audit and P0 fixes
 
-- `AUDIT.md` written (functional matrix, template completeness, Power Apps comparison, risks, P0/P1/P2, verdict).
+- First audit written (functional matrix, template completeness, Power Apps comparison, risks, P0/P1/P2, verdict);
+  removed after Milestone 6 — its open items are carried in `docs/TEMPLATE_AUDIT.md`, which supersedes it.
 - P0 fixes landed: naming unified to **Internal Tools Template** (PR #1 replaced by PR #3 on `devin/internal-tools-template`);
   stale `kyc-review.yaml` references and Node version claim corrected; `init-db --seed` skips non-empty tables with a hint;
   `RequestValidationError` and unexpected exceptions now use the `{"error": {...}}` envelope; KYC transition check moved
@@ -95,3 +96,57 @@ forced requests return 403 / 409 / 422 with no mutation; 400px viewport usable (
   `q` ≤ 100 chars. Two new tests: envelope/limits and a simulated stale-read conflict.
 
 Verification: `python -m pytest` → **15 passed**.
+
+## Milestone 5 — Feature-Flag Admin Panel (second app, fresh session, built by following the Skill against `specs/feature_flags.yaml`)
+
+Full measurements, timeline and skeptical evaluation: `docs/FEATURE_FLAG_BUILD_METRICS.md`.
+Baseline `0364651` (main) → final code commit `be1f095`. Session: https://app.devin.ai/sessions/929c6363efd14330b0ab305373bc0200
+
+- `specs/feature_flags.yaml`: 14 flags across development / staging / production; AC-1 … AC-10; non-goals (no real
+  provider, no CRUD, no rollouts, no SSO, no pagination).
+- Backend `app/apps/feature_flags/`: `feature_flags` + `feature_flag_audit_events` tables; `GET /meta`, `GET /flags`
+  (`q`, `environment`, `enabled`), `GET /flags/{id}` (detail + audit events), `POST /flags/{id}/toggle`
+  (`{enabled, reason?}`). Rules in `service.py`: reviewer only (403 `forbidden`), production locked
+  (403 `environment_locked`), unknown → 404, no-op → 409, reason ≤ 500 chars; conditional
+  `UPDATE … WHERE enabled = ?` + audit insert inside one `transaction()`.
+- Frontend `apps/feature_flags/`: list page (search, environment + state filters, debounced, URL-selected row), detail
+  panel (description list, change history, footer with lock / read-only notice and `Toggle`), `ConfirmDialog` with
+  optional reason, toast, backend error shown inline, refetch on success and on failure.
+- Shared changes: `Toggle` component (new, generic), `ConfirmDialog.collectReason` (optional reason field),
+  both registries. KYC files untouched.
+
+Assumptions / decisions (repository had no guidance)
+- Flag writes reuse the global `reviewer` role rather than adding an app-scoped role to `personas.py`.
+- `development` is editable like `staging`; only `production` is locked (the brief mandates staging editable and
+  production locked and is silent on development).
+- Reason is optional for flag toggles (the brief says "simple" toggles), unlike KYC where it is mandatory.
+- Re-sending the current state is a 409 `invalid_transition`, consistent with KYC's invalid-action handling.
+
+Tests (actual output): `python -m pytest -o addopts="" -q -p no:warnings` → **28 passed in 0.66s**
+(2 core + 13 KYC unchanged + 13 feature-flag). `npm run typecheck` clean; `npm run build` ✓.
+First run after writing the tests was `1 failed, 27 passed`: the test sent `"enabled": "yes"` expecting 422 but
+Pydantic lax mode coerces it to `true`; the test was corrected, the API was not changed.
+
+Browser verification (testing agent, recorded): run #1 at `085d208` — 7/8 PASS; FAIL: the toggle confirmation had
+no optional reason field because `ConfirmDialog` only rendered it when required. Fixed (`collectReason`), run #2 at
+`be1f095` — PASS, and KYC's Reject dialog still requires a reason.
+
+Known limitations: simulated personas (not auth); no app-scoped roles; audit table/timeline duplicated from KYC
+by convention rather than shared; no frontend tests / CI; concurrency guard tested with a simulated stale read only.
+
+Post-review (Devin Review on PR #5): `transaction()` in `core/db.py` switched to `BEGIN IMMEDIATE` after reproducing a
+`database is locked` 500 when a competing write committed between the read and the conditional `UPDATE` (affects KYC
+too); seed audit timestamps aligned with the flags' `updated_at`. `pytest` → **28 passed**. Spec filename
+(`feature_flags.yaml` vs `<app_id>.yaml`) escalated to the owner because the brief named the file explicitly.
+
+## Milestone 6 — Template audit after two apps and its P0/P1 fixes (PR #5)
+
+`docs/TEMPLATE_AUDIT.md` scores the Skill, AGENTS.md/template code and the spec files against what the two builds
+actually needed (7 / 6.5 / 7 out of 10). Fixes applied in the same PR, each as its own commit: shared `core/time.py`
+timestamp helpers (both apps' private `_now`/`_iso` removed); `test_core` checks `specs/<APP_ID>.yaml` exists and matches
+and that `transaction()` holds the write lock against a second connection; shared `useDebounced`/`useUrlParam` hooks and
+`AuditTimeline` component (both apps migrated, −60 lines); AGENTS.md rules 7–9 and a refreshed shared-code map; Skill
+steps rewritten where the two builds had to guess; spec headers state the conventions and AC-10 is a checklist; CI
+workflow + first Vitest test (`ConfirmDialog`). Verification: `pytest` → 35 passed; `tsc -b` clean; `npm test` → 4 passed;
+`vite build` clean. Deferred (P2): per-app roles, form primitives, spec schema, Playwright.
+

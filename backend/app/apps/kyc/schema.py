@@ -1,3 +1,5 @@
+"""DDL for the KYC Review Queue. Tables are owned by this app only; TABLES is in drop order (children first)."""
+
 TABLES = ["kyc_audit_events", "kyc_cases"]
 
 SCHEMA_SQL = """

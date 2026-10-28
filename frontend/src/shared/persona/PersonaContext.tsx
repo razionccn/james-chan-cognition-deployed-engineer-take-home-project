@@ -6,6 +6,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, setPersonaProvider } from '../api/client'
 
+/** Mirrors backend/app/core/personas.py; roles are global, not per app. */
 export interface Persona {
   id: string
   name: string
@@ -21,6 +22,7 @@ interface PersonaContextValue {
 const STORAGE_KEY = 'console.demoPersona'
 const PersonaContext = createContext<PersonaContextValue | null>(null)
 
+/** Loads personas from /api/personas, persists the choice in localStorage and feeds the API client header. */
 export function PersonaProvider({ children }: { children: ReactNode }) {
   const [personas, setPersonas] = useState<Persona[]>([])
   const [currentId, setCurrentId] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? '')
@@ -54,6 +56,7 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
   return <PersonaContext.Provider value={value}>{children}</PersonaContext.Provider>
 }
 
+/** Current persona + switcher; `current?.role === 'reviewer'` is the UX-only gate for write controls. */
 export function usePersona(): PersonaContextValue {
   const ctx = useContext(PersonaContext)
   if (!ctx) throw new Error('usePersona must be used within PersonaProvider')

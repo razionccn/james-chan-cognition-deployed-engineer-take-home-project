@@ -1,3 +1,4 @@
+// Console landing page: one card per installed app, generated from the registry.
 import { Link } from 'react-router-dom'
 import { appRegistry } from '@/apps/registry'
 import { EmptyState, PageHeader } from '@/shared/components'

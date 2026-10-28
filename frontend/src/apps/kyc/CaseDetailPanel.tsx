@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ApiError } from '@/shared/api/client'
 import { useQuery } from '@/shared/api/useQuery'
 import {
+  AuditTimeline,
   Button,
   ConfirmDialog,
   DescriptionList,
@@ -14,7 +15,8 @@ import {
 } from '@/shared/components'
 import { usePersona } from '@/shared/persona/PersonaContext'
 import { kycApi } from './api'
-import { RiskPill, StatusPill, actionMeta, formatDate, reviewerName, statusLabel } from './labels'
+import { formatDateTime } from '@/shared/format'
+import { RiskPill, StatusPill, actionMeta, reviewerName, statusLabel } from './labels'
 import type { Finding, ReviewAction } from './types'
 
 const findingTone: Record<Finding['result'], 'success' | 'warning' | 'danger'> = { pass: 'success', warn: 'warning', fail: 'danger' }
@@ -100,9 +102,9 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
                   { label: 'Email', value: detail.customer_email },
                   { label: 'Country', value: detail.country },
                   { label: 'Account type', value: detail.account_type === 'business' ? 'Business' : 'Individual' },
-                  { label: 'Submitted', value: formatDate(detail.submitted_at, true) },
+                  { label: 'Submitted', value: formatDateTime(detail.submitted_at) },
                   { label: 'Assigned reviewer', value: reviewerName(detail.assigned_reviewer) },
-                  { label: 'Last updated', value: formatDate(detail.updated_at, true) },
+                  { label: 'Last updated', value: formatDateTime(detail.updated_at) },
                 ]}
               />
             </Section>
@@ -122,30 +124,16 @@ export function CaseDetailPanel({ caseId, onClose, onChanged }: { caseId: string
             </Section>
 
             <Section title="Review history">
-              {detail.audit_events.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
-                  No review actions yet.
-                </p>
-              ) : (
-                <ol className="space-y-3">
-                  {detail.audit_events.map((e) => (
-                    <li key={e.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="font-medium text-slate-800">
-                          {actionMeta[e.action].pastLabel} by {e.actor_name}
-                        </span>
-                        <time className="text-xs text-slate-500" dateTime={e.created_at}>
-                          {formatDate(e.created_at, true)}
-                        </time>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {statusLabel[e.previous_status]} → {statusLabel[e.new_status]}
-                      </p>
-                      <p className="mt-2 text-sm text-slate-700">“{e.reason}”</p>
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <AuditTimeline
+                emptyText="No review actions yet."
+                entries={detail.audit_events.map((e) => ({
+                  id: e.id,
+                  title: `${actionMeta[e.action].pastLabel} by ${e.actor_name}`,
+                  at: e.created_at,
+                  change: `${statusLabel[e.previous_status]} → ${statusLabel[e.new_status]}`,
+                  reason: e.reason,
+                }))}
+              />
             </Section>
           </div>
         )}

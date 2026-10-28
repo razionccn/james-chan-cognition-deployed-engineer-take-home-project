@@ -33,9 +33,14 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
 
 @contextmanager
 def transaction(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
-    """Run a block as a single transaction; roll back on any exception."""
+    """Run a block as a single transaction; roll back on any exception.
+
+    BEGIN IMMEDIATE takes the write lock up front so a read-then-write block
+    waits for a competing writer (busy_timeout) instead of failing with
+    "database is locked" when it tries to upgrade a deferred read transaction.
+    """
     try:
-        conn.execute("BEGIN")
+        conn.execute("BEGIN IMMEDIATE")
         yield conn
         conn.commit()
     except Exception:

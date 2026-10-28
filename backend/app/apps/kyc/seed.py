@@ -3,13 +3,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-BASE = datetime(2026, 10, 1, 9, 0, tzinfo=timezone.utc)
-
-
-def _iso(dt: datetime) -> str:
-    return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+from app.core.time import SEED_EPOCH as BASE, to_iso
 
 
 def _findings(risk: str, status: str) -> list[dict[str, str]]:
@@ -77,7 +73,7 @@ def seed(conn: sqlite3.Connection) -> int:
             """INSERT INTO kyc_cases (id, customer_name, customer_email, country, account_type, risk_level,
                    status, submitted_at, updated_at, assigned_reviewer, findings_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (case_id, name, email, country, account_type, risk, "pending", _iso(submitted), _iso(updated),
+            (case_id, name, email, country, account_type, risk, "pending", to_iso(submitted), to_iso(updated),
              reviewer, json.dumps(_findings(risk, status))),
         )
         if status != "pending":
@@ -87,7 +83,7 @@ def seed(conn: sqlite3.Connection) -> int:
             conn.execute(
                 """INSERT INTO kyc_audit_events (case_id, action, previous_status, new_status, actor_id, actor_name, reason, created_at)
                    VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)""",
-                (case_id, action, status, actor, _REVIEWER_NAMES[actor], _HISTORY_REASONS[status], _iso(acted_at)),
+                (case_id, action, status, actor, _REVIEWER_NAMES[actor], _HISTORY_REASONS[status], to_iso(acted_at)),
             )
-            conn.execute("UPDATE kyc_cases SET status = ?, updated_at = ? WHERE id = ?", (status, _iso(acted_at), case_id))
+            conn.execute("UPDATE kyc_cases SET status = ?, updated_at = ? WHERE id = ?", (status, to_iso(acted_at), case_id))
     return len(_ROWS)

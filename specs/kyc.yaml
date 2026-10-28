@@ -1,6 +1,13 @@
 # Application specification: KYC Review Queue
 # Consumed by the `create-internal-tool` Skill (.agents/skills/create-internal-tool/SKILL.md).
 # Conventions and shared building blocks are described in AGENTS.md.
+#
+# Spec conventions (AGENTS.md rules 7–8):
+# - This file is named `specs/<app.id>.yaml`; `app.id` is snake_case and also names the backend
+#   package, the API prefix and the table prefix (checked by backend/tests/test_core.py).
+# - `roles` refer to the global persona roles (reviewer / viewer) in backend/app/core/personas.py.
+# - All `datetime` fields are ISO-8601 UTC with `Z` suffix at second precision.
+# - Seeded audit history must be consistent with the seeded records (`updated_at` == newest event).
 
 app:
   id: kyc
@@ -125,6 +132,7 @@ seed_data:
   requirements:
     - deterministic (same data every seed) so the demo is repeatable
     - approved / rejected / escalated cases ship with at least one historical audit event
+    - each case's updated_at equals the created_at of its newest audit event
     - findings include a mix of pass / warn / fail results correlated with risk level
 
 acceptance_criteria:
@@ -164,7 +172,13 @@ acceptance_criteria:
     then: 200 and the terminal status is set
   - id: AC-10
     kind: browser
-    then: queue loads, filters work, detail opens, approve-with-reason persists across refresh, audit entry shown, viewer sees no action buttons and backend rejects a forced request.
+    then:
+      - queue loads through the API
+      - search and status / risk filters work
+      - detail panel opens and its URL survives a reload
+      - approve with a reason persists across refresh and backend restart
+      - the new audit entry is shown
+      - viewer sees no action buttons and the backend rejects a forced request (403)
 
 non_goals:
   - real identity provider or SSO

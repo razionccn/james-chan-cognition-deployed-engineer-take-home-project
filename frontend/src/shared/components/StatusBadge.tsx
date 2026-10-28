@@ -1,5 +1,6 @@
 import { cx } from './cx'
 
+/** Semantic colours; apps map domain values to a tone in their labels.tsx. */
 export type BadgeTone = 'neutral' | 'info' | 'success' | 'danger' | 'warning'
 
 const tones: Record<BadgeTone, string> = {

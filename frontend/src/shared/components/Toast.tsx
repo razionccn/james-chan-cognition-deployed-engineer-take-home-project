@@ -10,6 +10,7 @@ interface Toast {
 
 const ToastContext = createContext<{ notify: (tone: Tone, message: string) => void } | null>(null)
 
+/** Mount once near the root; renders the toast stack bottom-right and auto-dismisses after 4.5 s. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const notify = useCallback((tone: Tone, message: string) => {
@@ -40,6 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/** `notify(tone, message)` — the standard success/error feedback after a consequential action. */
 export function useToast() {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error('useToast must be used within ToastProvider')
