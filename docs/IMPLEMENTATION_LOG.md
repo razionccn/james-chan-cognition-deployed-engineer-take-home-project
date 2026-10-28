@@ -129,3 +129,9 @@ Honest status of automation:
 - Automated: validation (same code path for CLI, API and wizard), YAML rendering, draft persistence in the browser.
 - Manual: committing the spec to `specs/`, engineering review, asking Devin to implement, code review, merge.
 - Not demonstrated: building a second app from a wizard-produced spec (Feature-Flag panel). The spec exists; the module does not.
+
+Browser verification of the wizard (Devin testing agent, recording on PR #4): full admin-panel request → valid → YAML download →
+downloaded file validated with the CLI; copy toasts; draft persistence and reset; six local step gates; backend errors shown
+with spec path + Re-check; review-queue defaults and custom Escalate action; "nothing is automatic" copy present; KYC regression
+(24 cases, approve + audit, new 422 envelope). Two fixes from testing: actions with a blank from/to are now gated locally;
+the shared mobile header wraps instead of overflowing at 400px. Not independently verified: clipboard contents.
