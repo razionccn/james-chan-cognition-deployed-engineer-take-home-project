@@ -174,6 +174,8 @@ Corrections made during the session
 Second application (Feature-Flag Admin Panel): built later in a separate fresh session; see
 `docs/FEATURE_FLAG_BUILD_METRICS.md` for actual test output at delivery (`28 passed`), elapsed time, reuse and the
 browser-testing defect it surfaced (optional reason missing from `ConfirmDialog`, fixed).
+  Control group: `docs/FEATURE_FLAG_BASELINE_METRICS.md` — the same tool built from scratch (no template, no Skill) in a
+  fresh session, with a side-by-side of time and code and the contamination caveats.
 
 Not completed / out of scope: production identity, deployment, pagination, Playwright smoke test, focus trap on `DetailPanel` itself (the confirmation dialog has one).
 
